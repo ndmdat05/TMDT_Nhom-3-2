@@ -1,4 +1,4 @@
-<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
 <div class="hero-section">
     <div class="tagline">
         <span class="dot"></span> Sàn trao đổi & sưu tầm Manga #1 Việt Nam

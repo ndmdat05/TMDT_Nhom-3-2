@@ -11,6 +11,7 @@
     <title>One Piece - Tập 1 (Bản in đầu 2003)</title>
 
     <!-- Font Awesome 6 Free CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/Css/TrangChiTiet.css">
 </head>

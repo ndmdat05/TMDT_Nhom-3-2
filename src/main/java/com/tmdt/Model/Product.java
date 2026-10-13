@@ -9,6 +9,7 @@ public class Product {
     private String status; // APPROVED, PENDING_APPROVAL, REJECTED, HIDDEN
     private String imageUrl;
     private String rejectionReason; // Lý do Admin từ chối
+    private String description;
 
     public Product() {}
 
@@ -25,18 +26,36 @@ public class Product {
 
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
+
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
+
     public double getPrice() { return price; }
     public void setPrice(double price) { this.price = price; }
+
     public int getSellerId() { return sellerId; }
     public void setSellerId(int sellerId) { this.sellerId = sellerId; }
+
     public String getSellerName() { return sellerName; }
     public void setSellerName(String sellerName) { this.sellerName = sellerName; }
+
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
     public String getImageUrl() { return imageUrl; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+
     public String getRejectionReason() { return rejectionReason; }
     public void setRejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; }
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+
+    // Alias cho title
+    public String getName() { return title; }
+    public void setName(String name) { this.title = name; }
+
+    // Alias cho imageUrl
+    public String getImage() { return imageUrl; }
+    public void setImage(String image) { this.imageUrl = image; }
 }
