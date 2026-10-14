@@ -1,0 +1,508 @@
+:root {
+    --bg: #f6f7fb;
+    --card: #fff;
+    --line: #e7e9f0;
+    --ink: #1c2033;
+    --mute: #7b8197;
+    --blue: #2f55e8;
+    --blue-s: #eaf0ff;
+    --green: #16a36a;
+    --green-s: #e4f7ee;
+    --org: #f08a24;
+    --org-s: #fff1de;
+    --red: #e5484d;
+    --red-s: #fff0f0;
+    --r: 14px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+button,
+input,
+select {
+    font: inherit;
+}
+
+.hd {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: #fff;
+    border-bottom: 1px solid var(--line);
+    height: 52px;
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    padding: 0 32px;
+}
+
+.logo {
+    font-weight: 800;
+    color: var(--org);
+    font-size: 15px;
+    line-height: 1.05;
+    letter-spacing: .5px;
+}
+
+.logo small {
+    display: block;
+    font-size: 6px;
+    font-weight: 600;
+    color: var(--mute);
+    letter-spacing: 0;
+}
+
+.hd .sr {
+    width: 240px;
+    height: 30px;
+    border: 1px solid var(--line);
+    background: #f5f6fa;
+    border-radius: 16px;
+    padding: 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--mute);
+    font-size: 11.5px;
+}
+
+.nav {
+    display: flex;
+    gap: 18px;
+    font-size: 12px;
+    color: #444;
+}
+
+.nav .on {
+    color: var(--blue);
+    font-weight: 600;
+    border-bottom: 2px solid var(--blue);
+    padding: 15px 0 13px;
+}
+
+.nav a {
+    padding: 15px 0;
+}
+
+.hd .sp {
+    flex: 1;
+}
+
+.btn-g {
+    background: var(--green);
+    color: #fff;
+    border: 0;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-weight: 600;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.ic {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #eef0f6;
+    display: grid;
+    place-items: center;
+    font-size: 10px;
+    position: relative;
+}
+
+.ic i {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: var(--red);
+    color: #fff;
+    font-style: normal;
+    font-size: 7px;
+    border-radius: 8px;
+    padding: 0 3px;
+}
+
+.av {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #444, #bbb);
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px var(--line);
+}
+
+.wrap {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+h1 {
+    font-size: 23px;
+    font-weight: 700;
+    letter-spacing: -.3px;
+}
+
+.sub {
+    color: var(--mute);
+    font-size: 11.5px;
+    margin-top: 4px;
+}
+
+.card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    box-shadow: 0 1px 3px rgba(20, 30, 70, .05);
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.badge:before {
+    content: "";
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.b-g {
+    background: var(--green-s);
+    color: var(--green);
+}
+
+.b-o {
+    background: var(--org-s);
+    color: #d9731a;
+}
+
+.b-b {
+    background: var(--blue-s);
+    color: var(--blue);
+}
+
+.b-r {
+    background: var(--red-s);
+    color: var(--red);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th {
+    font-size: 9.5px;
+    text-transform: uppercase;
+    color: var(--mute);
+    text-align: left;
+    font-weight: 600;
+    padding: 9px 14px;
+    background: #f8f9fc;
+    border-block: 1px solid var(--line);
+}
+
+td {
+    padding: 13px 14px;
+    border-bottom: 1px solid var(--line);
+    font-size: 11.5px;
+}
+
+tr:last-child td {
+    border-bottom: 0;
+}
+
+.r {
+    text-align: right;
+}
+
+.ft {
+    background: #fff;
+    border-top: 1px solid var(--line);
+    margin-top: 34px;
+}
+
+.ft .in {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 22px 20px 0;
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr;
+    gap: 20px;
+}
+
+.ft h4 {
+    font-size: 9px;
+    text-transform: uppercase;
+    color: #333;
+    margin-bottom: 9px;
+}
+
+.ft li {
+    list-style: none;
+    font-size: 10.5px;
+    color: var(--mute);
+    margin-bottom: 6px;
+}
+
+.ft p {
+    font-size: 10px;
+    color: var(--mute);
+    margin: 6px 0 8px;
+    max-width: 190px;
+}
+
+.ft .fb {
+    max-width: 900px;
+    margin: 18px auto 0;
+    padding: 12px 20px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--mute);
+}
+
+.ft .sec {
+    display: inline-block;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 3px 9px;
+    font-size: 9px;
+    color: var(--green);
+    background: var(--green-s);
+}
+
+
+/* orders */
+
+.od {
+    padding: 44px 0 0;
+}
+
+.trk {
+    margin-top: 22px;
+    padding: 18px 24px;
+}
+
+.trk .top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.live {
+    font-size: 9px;
+    color: var(--blue);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.live:before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--blue);
+}
+
+.trk h3 {
+    font-size: 17px;
+    margin-top: 3px;
+}
+
+.eta {
+    text-align: right;
+    font-size: 10px;
+    color: var(--mute);
+}
+
+.eta b {
+    display: block;
+    font-size: 14px;
+    color: var(--ink);
+    margin-top: 2px;
+}
+
+.stp {
+    display: flex;
+    margin: 22px 8px 14px;
+    position: relative;
+}
+
+.stp .st {
+    flex: 1;
+    text-align: center;
+    position: relative;
+    font-size: 10px;
+    color: var(--mute);
+}
+
+.st:before {
+    content: "";
+    position: absolute;
+    top: 6px;
+    left: -50%;
+    right: 50%;
+    height: 3px;
+    background: var(--line);
+    z-index: 0;
+}
+
+.st:first-child:before {
+    display: none;
+}
+
+.st.done:before,
+.st.cur:before {
+    background: var(--blue);
+}
+
+.st i {
+    display: block;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid var(--line);
+    margin: 0 auto 7px;
+    position: relative;
+    z-index: 1;
+}
+
+.st.done i {
+    background: var(--blue);
+    border-color: var(--blue);
+}
+
+.st.cur i {
+    background: var(--blue);
+    border-color: var(--blue);
+    box-shadow: 0 0 0 5px var(--blue-s);
+}
+
+.st b {
+    display: block;
+    color: var(--ink);
+    font-size: 10.5px;
+}
+
+.st.cur b {
+    color: var(--blue);
+}
+
+.st:last-child b {
+    color: var(--mute);
+}
+
+.addr {
+    border-top: 1px solid var(--line);
+    padding-top: 11px;
+    font-size: 10.5px;
+    color: var(--mute);
+}
+
+.hist {
+    margin-top: 16px;
+    overflow: hidden;
+}
+
+.hist .hh {
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.hist h3 {
+    font-size: 14px;
+}
+
+.hist .hh small {
+    display: block;
+    color: var(--mute);
+    font-size: 10px;
+    font-weight: 400;
+}
+
+.ctl {
+    display: flex;
+    gap: 8px;
+}
+
+.ctl input,
+.ctl select {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    height: 30px;
+    padding: 0 10px;
+    font-size: 11px;
+    background: #fff;
+    width: 150px;
+}
+
+.ctl select {
+    width: 120px;
+}
+
+.view {
+    color: var(--blue);
+    font-weight: 600;
+    font-size: 11px;
+    cursor: pointer;
+    background: none;
+    border: 0;
+}
+
+.empty {
+    text-align: center;
+    color: var(--mute);
+    padding: 24px;
+}
+
+
+@media (max-width: 900px) {
+    .nav,
+    .hd .sr {
+        display: none;
+    }
+
+    .ft .in {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* ---- Bổ sung cho bản JSP (không sửa các rule gốc ở trên) ---- */
+.err {
+    margin-top: 10px;
+    color: var(--red);
+    font-size: 11px;
+}

@@ -27,6 +27,10 @@
     <!-- SIDEBAR -->
     <aside class="w-[260px] border-r border-gray-200 p-6 sticky top-[72px] h-[calc(100vh-72px)]">
         <nav class="space-y-2 text-sm font-semibold">
+            <a href="${pageContext.request.contextPath}/admin/dashboard"
+               class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50">
+                <i class="fas fa-chart-line w-5 text-center"></i> Dashboard
+            </a>
             <a href="${pageContext.request.contextPath}/admin/manage?tab=users"
                class="flex items-center gap-3 px-4 py-3 rounded-lg ${activeTab == 'users' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'text-gray-600 hover:bg-gray-50'}">
                 <i class="fas fa-users w-5 text-center"></i> Quản lý Người dùng
