@@ -88,4 +88,7 @@ public class User {
     public void setAuth_provider(String auth_provider) {
         this.auth_provider = auth_provider;
     }
+    public boolean getIs_verified() {
+        return is_verified;
+    }
 }
