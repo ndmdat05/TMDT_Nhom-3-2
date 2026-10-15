@@ -131,8 +131,9 @@ public class UserDao extends BaseDao {
         User user = get().withHandle(h->{
             return h.createQuery(sql).bind("username", username).mapToBean(User.class).findOne().orElse(null);
         });
-        if(user == null){
-            return null;
+
+        if (user == null || user.getHash_password() == null || user.getHash_password().isEmpty()) {
+            return null; // Tài khoản không có mật khẩu (tài khoản Google) hoặc không tồn tại
         }
         boolean isPasswordMatch = BCrypt.checkpw(password, user.getHash_password());
         if(isPasswordMatch){
