@@ -3,6 +3,7 @@ package com.tmdt.Dao;
 import com.tmdt.Model.Product;
 import java.util.ArrayList;
 import java.util.List;
+import com.tmdt.db.JDBIConnector;
 
 public class ProductDao {
     private static List<Product> productList = new ArrayList<>();
@@ -75,6 +76,32 @@ public class ProductDao {
 
     // 2. Lấy sản phẩm theo ID (Cho trang Edit / Chi tiết)
     public Product getProductById(int id) {
+        String sql = "SELECT p.id, " +
+                "       p.name AS title, " +
+                "       p.price, " +
+                "       p.`desc` AS description, " +
+                "       COALESCE(pi.image_url, '') AS imageUrl " +
+                "FROM Products p " +
+                "LEFT JOIN Product_Images pi ON p.id = pi.product_id AND pi.is_main = 1 " +
+                "WHERE p.id = :id " +
+                "LIMIT 1";
+
+        try {
+            Product product = JDBIConnector.get().withHandle(handle ->
+                    handle.createQuery(sql)
+                            .bind("id", id)
+                            .mapToBean(Product.class)
+                            .findOne()
+                            .orElse(null)
+            );
+            if (product != null) {
+                return product;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        // Nếu DB chưa có id này, tìm trong danh sách mẫu cũ
         for (Product p : productList) {
             if (p.getId() == id && !"DELETED".equalsIgnoreCase(p.getStatus())) {
                 return p;
@@ -138,4 +165,5 @@ public class ProductDao {
         }
         return list;
     }
+
 }
