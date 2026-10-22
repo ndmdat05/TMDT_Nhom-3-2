@@ -16,6 +16,7 @@ public class User {
     private String auth_provider;
     private String phone_number;
     private String address;
+    private String avatar_url;
 
     public User() {}
 
@@ -33,7 +34,7 @@ public class User {
         this.phone_number = phone_number;
         this.address = address;
     }
-    public User(int id,String full_name, String username, String email,String hash_password, String role,boolean is_verified ,String verify_token,String auth_provider,String phone_number,String address,String status) {
+    public User(int id,String full_name, String username, String email,String hash_password, String role,boolean is_verified ,String verify_token,String auth_provider,String phone_number,String address,String avatar_url,String status) {
         this.id = id;
         this.full_name = full_name;
         this.username = username;
@@ -124,5 +125,13 @@ public class User {
 
     public void setAddress(String address) {
         this.address = address;
+    }
+
+    public String getAvatar_url() {
+        return avatar_url;
+    }
+
+    public void setAvatar_url(String avatar_url) {
+        this.avatar_url = avatar_url;
     }
 }

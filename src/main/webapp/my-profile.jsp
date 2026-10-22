@@ -43,9 +43,16 @@
         <aside class="lg:col-span-1">
             <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center">
                 <div class="relative w-24 h-24 mx-auto mb-4">
-                    <div class="w-full h-full rounded-full bg-indigo-900 text-white flex items-center justify-center font-bold text-2xl border-4 border-indigo-50 shadow">
-                        ${fn:toUpperCase(fn:substring(displayName, 0, 2))}
-                    </div>
+                    <c:choose>
+                        <c:when test="${not empty user.avatar_url}">
+                            <img src="${user.avatar_url}" alt="Avatar" class="w-full h-full rounded-full object-cover border-4 border-indigo-50 shadow">
+                        </c:when>
+                        <c:otherwise>
+                            <div class="w-full h-full rounded-full bg-indigo-900 text-white flex items-center justify-center font-bold text-2xl border-4 border-indigo-50 shadow">
+                                    ${fn:toUpperCase(fn:substring(user.username, 0, 2))}
+                            </div>
+                        </c:otherwise>
+                    </c:choose>
                     <span class="absolute bottom-1 right-1 w-5 h-5 bg-emerald-500 border-2 border-white rounded-full" title="Đang hoạt động"></span>
                 </div>
 
@@ -91,7 +98,6 @@
                     </div>
                 </div>
 
-                <!-- Hiển thị thông báo thành công hoặc lỗi từ Servlet -->
                 <c:if test="${not empty successMessage}">
                     <div class="mb-6 p-4 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-sm flex items-center gap-2">
                         <i class="fas fa-check-circle"></i> ${successMessage}
@@ -164,6 +170,20 @@
                     </div>
 
                     <div>
+                        <label for="avatar_url" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                            Đường dẫn Ảnh đại diện (Avatar URL)
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                                <i class="fas fa-image"></i>
+                            </div>
+                            <input type="text" id="avatar_url" name="avatar_url" value="${user.avatar_url}"
+                                   placeholder="https://example.com/avatar.jpg"
+                                   class="w-full bg-white border border-gray-200 text-gray-900 text-sm rounded-xl pl-10 p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none">
+                        </div>
+                    </div>
+
+                    <div>
                         <label for="address" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
                             Địa chỉ nhận hàng
                         </label>
@@ -182,14 +202,14 @@
                             <span class="font-bold text-gray-600">Trạng thái xác minh:</span>
                             <c:choose>
                                 <c:when test="${user.is_verified}">
-                                        <span class="text-emerald-600 font-bold flex items-center gap-1">
-                                            <i class="fas fa-check-circle"></i> Đã xác thực
-                                        </span>
+                                    <span class="text-emerald-600 font-bold flex items-center gap-1">
+                                        <i class="fas fa-check-circle"></i> Đã xác thực
+                                    </span>
                                 </c:when>
                                 <c:otherwise>
-                                        <span class="text-amber-600 font-bold flex items-center gap-1">
-                                            <i class="fas fa-exclamation-circle"></i> Chưa xác thực
-                                        </span>
+                                    <span class="text-amber-600 font-bold flex items-center gap-1">
+                                        <i class="fas fa-exclamation-circle"></i> Chưa xác thực
+                                    </span>
                                 </c:otherwise>
                             </c:choose>
                         </div>
@@ -200,7 +220,6 @@
                     </div>
 
                     <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
-
                         <button type="submit" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-sm transition-colors flex items-center gap-2">
                             <i class="fas fa-save"></i> Lưu thông tin
                         </button>
