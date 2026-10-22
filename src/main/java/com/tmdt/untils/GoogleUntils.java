@@ -8,8 +8,8 @@ import org.apache.http.client.fluent.Request;
 
 import java.io.IOException;
 public class GoogleUntils {
-    public static final String GOOGLE_CLIENT_ID = "918892325001-opqt9q70e7q7n0qstli2a3qqi8kb1rts.apps.googleusercontent.com";
-    public static final String GOOGLE_CLIENT_SECRET = "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";
+    public static final String GOOGLE_CLIENT_ID = "";
+    public static final String GOOGLE_CLIENT_SECRET = "";
     public static final String GOOGLE_REDIRECT_URI = "http://localhost:8080/TMDT_Nhom_3_2_war/google-login";
     public static final String GOOGLE_LINK_GET_TOKEN = "https://oauth2.googleapis.com/token";
     public static final String GOOGLE_LINK_GET_USER_INFO = "https://openidconnect.googleapis.com/v1/userinfo";
@@ -86,8 +86,10 @@ public class GoogleUntils {
                 "BUYER",
                 true,
                 null,
-                "GOOGLE"
-                ,"ACTIVE"
+                "GOOGLE",
+                "",
+                "",
+                "ACTIVE"
         );
 
 

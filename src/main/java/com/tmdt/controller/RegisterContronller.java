@@ -65,7 +65,7 @@ public class RegisterContronller extends HttpServlet {
 
 
         String token = UUID.randomUUID().toString();
-        User u = new User(fullname,username,email,hashedPassword,"BUYER",false,token,"LOCAL","ACTIVE");
+        User u = new User(fullname,username,email,hashedPassword,"BUYER",false,token,"LOCAL","","","ACTIVE");
         boolean isSaved = us.addUser(u);
         if (isSaved) {
             String verifyLink = "http://localhost:8080" + request.getContextPath() + "/verify-account?token=" + token;

@@ -10,10 +10,10 @@ public class UserDao extends BaseDao {
     private static List<User> userList = new ArrayList<>();
 
     static {
-        userList.add(new User("Nguyen Van A","nguyenvana", "nva@gmail.com","", "SELLER",false,"","", "ACTIVE"));
-        userList.add(new User("Nguyen Van A","tranvanb", "tvb@gmail.com","", "BUYER", false,"","","ACTIVE"));
-        userList.add(new User("Nguyen Van A","lethic", "ltc@gmail.com","", "BUYER",false,"","", "LOCKED"));
-        userList.add(new User("Admin System", "admin", "admin@gmail.com", "MÃ_BCRYPT_CỦA_MẬT_KHẨU", "ADMIN", true, "", "", "ACTIVE"));
+        userList.add(new User("Nguyen Van A","nguyenvana", "nva@gmail.com","", "SELLER",false,"","","","" ,"ACTIVE"));
+        userList.add(new User("Nguyen Van A","tranvanb", "tvb@gmail.com","", "BUYER", false,"","","","","ACTIVE"));
+        userList.add(new User("Nguyen Van A","lethic", "ltc@gmail.com","", "BUYER",false,"","","","", "LOCKED"));
+        userList.add(new User("Admin System", "admin", "admin@gmail.com", "MÃ_BCRYPT_CỦA_MẬT_KHẨU", "ADMIN", true, "", "","","", "ACTIVE"));
     }
 
     // Bổ sung hàm Soft Delete User
@@ -184,4 +184,28 @@ public class UserDao extends BaseDao {
             return h.createQuery(sql).bind("email", email).mapToBean(User.class).findOne().orElse(null);
         });
     }
+
+    public User findById(int id) {
+        String sql = "SELECT id, full_name, username, email, role, created_at, status, " +
+                "verify_token, is_verified, hash_password, auth_provider, " +
+                "phone_number, address, avatar_url, updated_at " +
+                "FROM users WHERE id = :id";
+        return get().withHandle(h -> {
+            return h.createQuery(sql)
+                    .bind("id", id)
+                    .mapToBean(User.class)
+                    .findOne()
+                    .orElse(null);
+        });
+    }
+
+    public boolean updateProfile(User user) {
+        String sql = "UPDATE users SET full_name = :full_name, phone_number = :phone_number, address = :address WHERE id = :id";
+        return get().withHandle(h -> {
+           return h.createUpdate(sql)
+                    .bindBean(user)
+                    .execute() > 0;
+        });
+    }
 }
+
