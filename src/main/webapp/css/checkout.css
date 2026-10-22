@@ -1,0 +1,317 @@
+
+.checkout-breadcrumb {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    margin-bottom: 8px;
+}
+.checkout-breadcrumb a {
+    color: #64748b;
+    text-decoration: none;
+    transition: color 0.15s;
+}
+.checkout-breadcrumb a:hover {
+    color: #2563eb;
+}
+.checkout-breadcrumb span {
+    color: #2563eb;
+    font-weight: 600;
+}
+
+/* Tiêu đề trang */
+.checkout-title {
+    font-size: 1.85rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.025em;
+    margin-bottom: 24px;
+}
+
+/* Thẻ bao quát từng bước (Card) */
+.checkout-step-card {
+    background-color: #ffffff;
+    border-radius: 20px;
+    padding: 28px;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.02);
+    margin-bottom: 24px;
+}
+
+.step-badge {
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #2563eb;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.step-heading {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+}
+
+/* Input Form */
+.form-group label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #475569;
+    margin-bottom: 6px;
+}
+
+.form-control-input {
+    width: 100%;
+    background-color: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 0.9rem;
+    color: #0f172a;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.form-control-input:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.form-control-input::placeholder {
+    color: #94a3b8;
+}
+
+/* Custom Checkbox */
+.custom-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+    margin-top: 14px;
+    user-select: none;
+}
+
+.custom-checkbox-label input[type="checkbox"] {
+    accent-color: #2563eb;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+/* ============================================================
+   LỰA CHỌN PHƯƠNG THỨC THANH TOÁN
+   ============================================================ */
+.payment-option-card {
+    border: 1.5px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 12px;
+    background-color: #ffffff;
+}
+
+.payment-option-card:hover {
+    border-color: #cbd5e1;
+}
+
+.payment-option-card.active {
+    border-color: #2563eb;
+    background-color: #f8faff;
+}
+
+.payment-option-card input[type="radio"] {
+    accent-color: #2563eb;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.payment-icon-box {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background-color: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #2563eb;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.payment-option-card.active .payment-icon-box {
+    background-color: #e0e7ff;
+}
+
+.payment-info-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.badge-selected {
+    font-size: 0.65rem;
+    background-color: #dbeafe;
+    color: #1d4ed8;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-weight: 700;
+}
+
+.payment-info-sub {
+    font-size: 0.8rem;
+    color: #64748b;
+    margin-top: 2px;
+}
+
+/* ============================================================
+   CỘT PHẢI: TỔNG QUAN ĐƠN HÀNG (SUMMARY CARD)
+   ============================================================ */
+.order-summary-card {
+    background-color: #ffffff;
+    border-radius: 20px;
+    padding: 28px;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+}
+
+.summary-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.summary-card-header h3 {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+}
+
+.badge-item-count {
+    background-color: #f1f5f9;
+    color: #64748b;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+}
+
+/* Danh sách manga dạng số 1, 2, 3... */
+.order-item-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #f1f5f9;
+    margin-bottom: 20px;
+}
+
+.order-item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.order-item-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.4;
+    flex: 1;
+}
+
+.order-item-price {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #0f172a;
+    white-space: nowrap;
+}
+
+/* Tính tiền */
+.price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    color: #64748b;
+    margin-bottom: 10px;
+}
+
+.price-row span:last-child {
+    font-weight: 700;
+    color: #334155;
+}
+
+.price-row.total-final {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid #f1f5f9;
+    color: #0f172a;
+    margin-bottom: 24px;
+}
+
+.price-row.total-final .total-label {
+    font-size: 1.1rem;
+    font-weight: 800;
+}
+
+.price-row.total-final .total-value {
+    font-size: 1.4rem;
+    font-weight: 900;
+    color: #0f172a;
+}
+
+/* Nút xác nhận đặt hàng */
+.btn-confirm-order {
+    width: 100%;
+    background-color: #2563eb;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.95rem;
+    padding: 14px 20px;
+    border-radius: 14px;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    transition: all 0.2s ease;
+}
+
+.btn-confirm-order:hover {
+    background-color: #1d4ed8;
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+    transform: translateY(-1px);
+}
+
+.secure-note {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-top: 16px;
+    font-weight: 500;
+}
+
+.secure-note i {
+    color: #10b981;
+}

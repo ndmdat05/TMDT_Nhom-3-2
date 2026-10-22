@@ -7,44 +7,41 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
 import java.io.IOException;
+import java.util.List;
 
-@WebServlet(name = "ProductDetailController", urlPatterns = {"/chi-tiet-san-pham"})
+@WebServlet(name = "ProductDetailController", urlPatterns = {"/product-detail", "/chi-tiet-san-pham"})
 public class ProductDetailController extends HttpServlet {
 
     private ProductDao productDao = new ProductDao();
-
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        request.setCharacterEncoding("UTF-8");
         response.setContentType("text/html;charset=UTF-8");
-
-        // 1. Nhận tham số id từ URL (?id=...)
+        request.setCharacterEncoding("UTF-8");
         String idParam = request.getParameter("id");
-        int productId = 1; //
+        if (idParam == null || idParam.trim().isEmpty()) {
+            response.sendRedirect(request.getContextPath() + "/home");
+            return;
+        }
 
-        if (idParam != null && !idParam.trim().isEmpty()) {
-            try {
-                productId = Integer.parseInt(idParam.trim());
-            } catch (NumberFormatException e) {
-                productId = 1;
+        try {
+            int productId = Integer.parseInt(idParam);
+            Product product = productDao.getProductById(productId);
+
+            if (product == null) {
+                response.sendRedirect(request.getContextPath() + "/home");
+                return;
             }
+            List<Product> relatedProducts = productDao.getTopNewProducts(4);
+
+            request.setAttribute("product", product);
+            request.setAttribute("relatedProducts", relatedProducts);
+
+            request.getRequestDispatcher("/TrangChiTiet.jsp").forward(request, response);
+
+        } catch (NumberFormatException e) {
+            response.sendRedirect(request.getContextPath() + "/home");
         }
-
-        // 2. Lấy dữ liệu sản phẩm từ DAO
-        Product product = productDao.getProductById(productId);
-
-        // 3. Nếu id tìm không thấy, lấy sản phẩm id = 1
-        if (product == null) {
-            product = productDao.getProductById(1);
-        }
-
-        // 4. Gửi dữ liệu đối tượng product sang JSP
-        request.setAttribute("product", product);
-
-        // Chuyển tiếp tới TrangChiTiet.jsp
-        request.getRequestDispatcher("/TrangChiTiet.jsp").forward(request, response);
     }
 }
