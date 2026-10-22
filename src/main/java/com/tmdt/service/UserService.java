@@ -35,4 +35,10 @@ public class UserService {
     public User findByEmail(String email) {
         return userDao.findByEmail(email);
     }
+    public User findById(int id) {
+        return userDao.findById(id);
+    }
+    public boolean updateProfile(User user) {
+        return  userDao.updateProfile(user);
+    }
 }

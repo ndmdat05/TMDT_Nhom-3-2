@@ -28,7 +28,7 @@ public class DBProperties {
         return prop.get("db.username").toString();
     }
     public static String password(){
-        return "123456";
+        return prop.getProperty("db.password", "");
     }
 
     public static String dbname(){
