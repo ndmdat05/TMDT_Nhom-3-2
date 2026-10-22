@@ -45,9 +45,13 @@
             <i class="far fa-heart text-xl"></i>
             <span class="absolute -top-1 -right-2 bg-indigo-600 text-white text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full border-2 border-white">3</span>
         </a>
-        <a href="#" class="text-gray-600 hover:text-indigo-600 relative transition-colors no-underline">
+        <a href="${pageContext.request.contextPath}/cart" class="text-gray-600 hover:text-indigo-600 relative transition-colors no-underline" title="Giỏ hàng">
             <i class="fas fa-shopping-cart text-xl"></i>
-            <span class="absolute -top-1 -right-2 bg-indigo-600 text-white text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full border-2 border-white">1</span>
+            <c:if test="${not empty sessionScope.cart && sessionScope.cart.totalQuantity > 0}">
+        <span class="absolute -top-1 -right-2 bg-indigo-600 text-white text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full border-2 border-white">
+                ${sessionScope.cart.totalQuantity}
+        </span>
+            </c:if>
         </a>
         <a href="#" class="text-gray-600 hover:text-indigo-600 relative transition-colors no-underline mr-2">
             <i class="far fa-bell text-xl"></i>

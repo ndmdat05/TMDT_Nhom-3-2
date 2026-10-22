@@ -1,169 +1,256 @@
 package com.tmdt.Dao;
 
 import com.tmdt.Model.Product;
+import com.tmdt.db.JDBIConnector;
 import java.util.ArrayList;
 import java.util.List;
-import com.tmdt.db.JDBIConnector;
 
 public class ProductDao {
-    private static List<Product> productList = new ArrayList<>();
 
-    static {
-        productList.add(new Product(101, "Slam Dunk Deluxe Tập 1", 120000, 1, "nguyenvana", "ACTIVE", null, null));
-        productList.add(new Product(102, "One Piece Tập 1 (Bản in 1997)", 550000, 1, "nguyenvana", "ACTIVE", null, null));
-        productList.add(new Product(103, "Dragon Ball Full Boxset", 2500000, 2, "tranvanb", "HIDDEN", null, null));
-        productList.add(new Product(104, "Naruto Tập 1 (Tái bản)", 45000, 1, "nguyenvana", "ACTIVE", null, null));
-    }
+    // =========================================================================
+    // 1. CÁC HÀM CHO TRANG CHỦ & TRANG CHI TIẾT SẢN PHẨM
+    // =========================================================================
 
-    // Lọc bỏ sản phẩm bị Soft Delete khi lấy tất cả
-    public List<Product> getAllProducts() {
-        List<Product> result = new ArrayList<>();
-        for (Product p : productList) {
-            if (!"DELETED".equalsIgnoreCase(p.getStatus())) {
-                result.add(p);
-            }
-        }
-        return result;
-    }
-
-    // Lọc bỏ sản phẩm bị Soft Delete khi lấy theo Seller
-    public List<Product> getProductsBySellerId(int sellerId) {
-        List<Product> result = new ArrayList<>();
-        for (Product p : productList) {
-            if (p.getSellerId() == sellerId && !"DELETED".equalsIgnoreCase(p.getStatus())) {
-                result.add(p);
-            }
-        }
-        return result;
-    }
-
-    // SOFT DELETE: Không xóa thật, chỉ đổi trạng thái thành DELETED
-    public boolean deleteProduct(int productId) {
-        for (Product p : productList) {
-            if (p.getId() == productId) {
-                p.setStatus("DELETED"); // Dữ liệu vẫn còn, chỉ bị ẩn
-                return true;
-            }
-        }
-        return false;
-    }
-
-    // Ẩn / Hiện sản phẩm (Dành cho Seller)
-    public boolean toggleProductStatus(int productId) {
-        for (Product p : productList) {
-            if (p.getId() == productId) {
-                if ("ACTIVE".equalsIgnoreCase(p.getStatus())) {
-                    p.setStatus("HIDDEN");
-                } else {
-                    p.setStatus("ACTIVE");
-                }
-                return true;
-            }
-        }
-        return false;
-    }
-
-    // 1. Đếm tổng số lượng sản phẩm (Bỏ qua sản phẩm DELETED)
-    public int countProducts() {
-        int count = 0;
-        for (Product p : productList) {
-            if (!"DELETED".equalsIgnoreCase(p.getStatus())) {
-                count++;
-            }
-        }
-        return count;
-    }
-
-    // 2. Lấy sản phẩm theo ID (Cho trang Edit / Chi tiết)
-    public Product getProductById(int id) {
-        String sql = "SELECT p.id, " +
-                "       p.name AS title, " +
-                "       p.price, " +
-                "       p.`desc` AS description, " +
-                "       COALESCE(pi.image_url, '') AS imageUrl " +
-                "FROM Products p " +
-                "LEFT JOIN Product_Images pi ON p.id = pi.product_id AND pi.is_main = 1 " +
-                "WHERE p.id = :id " +
-                "LIMIT 1";
-
+    // Lấy danh sách manga mới cập nhật (Chỉ lấy sản phẩm APPROVED)
+    public List<Product> getTopNewProducts(int limit) {
+        String sql = "SELECT p.id, p.title, p.price, p.stock_quantity AS stockQuantity, " +
+                "       COALESCE(p.image_url, '') AS imageUrl, p.description, " +
+                "       p.series_name AS seriesName, p.author, p.volume_number AS volumeNumber, " +
+                "       p.edition, p.item_condition AS itemCondition, p.language, p.status, " +
+                "       p.seller_id AS sellerId, u.full_name AS sellerName " +
+                "FROM products p " +
+                "LEFT JOIN users u ON p.seller_id = u.id " +
+                "WHERE p.status = 'APPROVED' " +
+                "ORDER BY p.created_at DESC LIMIT :limit";
         try {
-            Product product = JDBIConnector.get().withHandle(handle ->
+            return JDBIConnector.get().withHandle(handle ->
+                    handle.createQuery(sql)
+                            .bind("limit", limit)
+                            .mapToBean(Product.class)
+                            .list()
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+    }
+
+    // Lấy danh sách manga nổi bật (Sắp xếp theo giá trị sưu tầm)
+    public List<Product> getFeaturedProducts(int limit) {
+        String sql = "SELECT p.id, p.title, p.price, p.stock_quantity AS stockQuantity, " +
+                "       COALESCE(p.image_url, '') AS imageUrl, p.description, " +
+                "       p.series_name AS seriesName, p.author, p.volume_number AS volumeNumber, " +
+                "       p.edition, p.item_condition AS itemCondition, p.language, p.status, " +
+                "       p.seller_id AS sellerId, u.full_name AS sellerName " +
+                "FROM products p " +
+                "LEFT JOIN users u ON p.seller_id = u.id " +
+                "WHERE p.status = 'APPROVED' " +
+                "ORDER BY p.price DESC LIMIT :limit";
+        try {
+            return JDBIConnector.get().withHandle(handle ->
+                    handle.createQuery(sql)
+                            .bind("limit", limit)
+                            .mapToBean(Product.class)
+                            .list()
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+    }
+
+    // Lấy toàn bộ manga đang bán (Cho trang danh mục /products)
+    public List<Product> getAllProducts() {
+        String sql = "SELECT p.id, p.title, p.price, p.stock_quantity AS stockQuantity, " +
+                "       COALESCE(p.image_url, '') AS imageUrl, p.description, " +
+                "       p.series_name AS seriesName, p.author, p.volume_number AS volumeNumber, " +
+                "       p.edition, p.item_condition AS itemCondition, p.language, p.status, " +
+                "       p.seller_id AS sellerId, u.full_name AS sellerName " +
+                "FROM products p " +
+                "LEFT JOIN users u ON p.seller_id = u.id " +
+                "WHERE p.status = 'APPROVED' " +
+                "ORDER BY p.id DESC";
+        try {
+            return JDBIConnector.get().withHandle(handle ->
+                    handle.createQuery(sql)
+                            .mapToBean(Product.class)
+                            .list()
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+    }
+
+    // Lấy chi tiết 1 cuốn manga theo ID (Dùng cho TrangChiTiet và Form Chỉnh sửa)
+    public Product getProductById(int id) {
+        String sql = "SELECT p.id, p.title, p.price, p.stock_quantity AS stockQuantity, " +
+                "       COALESCE(p.image_url, '') AS imageUrl, p.description, " +
+                "       p.series_name AS seriesName, p.author, p.volume_number AS volumeNumber, " +
+                "       p.edition, p.item_condition AS itemCondition, p.language, p.status, " +
+                "       p.seller_id AS sellerId, u.full_name AS sellerName, u.avatar_url AS sellerAvatar " +
+                "FROM products p " +
+                "LEFT JOIN users u ON p.seller_id = u.id " +
+                "WHERE p.id = :id AND p.status <> 'DELETED' " +
+                "LIMIT 1";
+        try {
+            return JDBIConnector.get().withHandle(handle ->
                     handle.createQuery(sql)
                             .bind("id", id)
                             .mapToBean(Product.class)
                             .findOne()
                             .orElse(null)
             );
-            if (product != null) {
-                return product;
-            }
         } catch (Exception e) {
             e.printStackTrace();
-        }
-
-        // Nếu DB chưa có id này, tìm trong danh sách mẫu cũ
-        for (Product p : productList) {
-            if (p.getId() == id && !"DELETED".equalsIgnoreCase(p.getStatus())) {
-                return p;
-            }
-        }
-        return null;
-    }
-
-    // 3. Thêm mới sản phẩm (Tự sinh ID tăng dần)
-    public void addProduct(Product p) {
-        int maxId = 100;
-        for (Product item : productList) {
-            if (item.getId() > maxId) {
-                maxId = item.getId();
-            }
-        }
-        p.setId(maxId + 1);
-        if (p.getStatus() == null) {
-            p.setStatus("PENDING_APPROVAL");
-        }
-        productList.add(p);
-    }
-
-    // 4. Cập nhật thông tin sản phẩm
-    public void updateProduct(Product updatedProduct) {
-        for (int i = 0; i < productList.size(); i++) {
-            Product p = productList.get(i);
-            if (p.getId() == updatedProduct.getId()) {
-                if (updatedProduct.getTitle() != null) p.setTitle(updatedProduct.getTitle());
-                if (updatedProduct.getPrice() > 0) p.setPrice(updatedProduct.getPrice());
-                if (updatedProduct.getImageUrl() != null) p.setImageUrl(updatedProduct.getImageUrl());
-                if (updatedProduct.getDescription() != null) p.setDescription(updatedProduct.getDescription());
-                break;
-            }
+            return null;
         }
     }
 
-    // 5. Lấy danh sách sản phẩm mới nhất (Bỏ qua sản phẩm DELETED)
-    public List<Product> getTopNewProducts(int limit) {
-        List<Product> list = new ArrayList<>();
-        int count = 0;
-        for (int i = productList.size() - 1; i >= 0; i--) {
-            Product p = productList.get(i);
-            if (!"DELETED".equalsIgnoreCase(p.getStatus())) {
-                list.add(p);
-                count++;
-                if (count >= limit) break;
-            }
+    // =========================================================================
+    // 2. CÁC HÀM QUẢN LÝ DÀNH CHO SELLER & ADMIN (SELLERMANAGESERVLET)
+    // =========================================================================
+
+    // Lấy danh sách manga của 1 người bán cụ thể
+    public List<Product> getProductsBySellerId(int sellerId) {
+        String sql = "SELECT p.id, p.title, p.price, p.stock_quantity AS stockQuantity, " +
+                "       COALESCE(p.image_url, '') AS imageUrl, p.description, " +
+                "       p.series_name AS seriesName, p.author, p.volume_number AS volumeNumber, " +
+                "       p.edition, p.item_condition AS itemCondition, p.language, p.status " +
+                "FROM products p " +
+                "WHERE p.seller_id = :sellerId AND p.status <> 'DELETED' " +
+                "ORDER BY p.id DESC";
+        try {
+            return JDBIConnector.get().withHandle(handle ->
+                    handle.createQuery(sql)
+                            .bind("sellerId", sellerId)
+                            .mapToBean(Product.class)
+                            .list()
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
         }
-        return list;
     }
 
-    // 6. Lấy danh sách sản phẩm nổi bật (Bỏ qua sản phẩm DELETED)
-    public List<Product> getFeaturedProducts(int limit) {
-        List<Product> list = new ArrayList<>();
-        for (Product p : productList) {
-            if (!"DELETED".equalsIgnoreCase(p.getStatus())) {
-                list.add(p);
-                if (list.size() >= limit) break;
-            }
+    // Thêm mới sản phẩm từ SellerManageServlet
+    public int addProduct(Product p) {
+        // Chuẩn hóa status sang enum hợp lệ của bảng products
+        String status = p.getStatus();
+        if (status == null || "ACTIVE".equalsIgnoreCase(status) || status.trim().isEmpty()) {
+            status = "APPROVED";
         }
-        return list;
+
+        // Bù đắp giá trị mặc định cho các cột NOT NULL trong MySQL
+        String condition = (p.getItemCondition() != null && !p.getItemCondition().trim().isEmpty())
+                ? p.getItemCondition() : "NEW";
+        String lang = (p.getLanguage() != null && !p.getLanguage().trim().isEmpty())
+                ? p.getLanguage() : "Tiếng Việt";
+        int stock = p.getStockQuantity() > 0 ? p.getStockQuantity() : 1;
+        String img = (p.getImageUrl() != null && !p.getImageUrl().trim().isEmpty())
+                ? p.getImageUrl() : "Image/manga_01.jpg";
+
+        String sql = "INSERT INTO products (seller_id, category_id, brand_id, title, description, price, " +
+                "                      stock_quantity, image_url, series_name, author, volume_number, " +
+                "                      edition, item_condition, language, status) " +
+                "VALUES (:sellerId, 1, 1, :title, :description, :price, :stockQuantity, " +
+                "        :imageUrl, :seriesName, :author, :volumeNumber, :edition, :itemCondition, " +
+                "        :language, :status)";
+        try {
+            final String finalStatus = status;
+            return JDBIConnector.get().withHandle(handle ->
+                    handle.createUpdate(sql)
+                            .bind("sellerId", p.getSellerId() > 0 ? p.getSellerId() : 1)
+                            .bind("title", p.getTitle())
+                            .bind("description", p.getDescription())
+                            .bind("price", p.getPrice())
+                            .bind("stockQuantity", stock)
+                            .bind("imageUrl", img)
+                            .bind("seriesName", p.getSeriesName())
+                            .bind("author", p.getAuthor())
+                            .bind("volumeNumber", p.getVolumeNumber())
+                            .bind("edition", p.getEdition())
+                            .bind("itemCondition", condition)
+                            .bind("language", lang)
+                            .bind("status", finalStatus)
+                            .executeAndReturnGeneratedKeys("id")
+                            .mapTo(Integer.class)
+                            .one()
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
     }
 
+    // Cập nhật thông tin sản phẩm
+    public boolean updateProduct(Product p) {
+        String sql = "UPDATE products SET " +
+                "title = :title, " +
+                "price = :price, " +
+                "description = :description, " +
+                "image_url = CASE WHEN :imageUrl IS NOT NULL AND :imageUrl <> '' THEN :imageUrl ELSE image_url END " +
+                "WHERE id = :id";
+        try {
+            return JDBIConnector.get().withHandle(handle ->
+                    handle.createUpdate(sql)
+                            .bind("id", p.getId())
+                            .bind("title", p.getTitle())
+                            .bind("price", p.getPrice())
+                            .bind("description", p.getDescription())
+                            .bind("imageUrl", p.getImageUrl())
+                            .execute() > 0
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // Ẩn / Hiện manga (Toggle trạng thái giữa APPROVED và HIDDEN)
+    public boolean toggleProductStatus(int productId) {
+        String sql = "UPDATE products " +
+                "SET status = CASE WHEN status = 'APPROVED' THEN 'HIDDEN' ELSE 'APPROVED' END " +
+                "WHERE id = :id AND status <> 'DELETED'";
+        try {
+            return JDBIConnector.get().withHandle(handle ->
+                    handle.createUpdate(sql)
+                            .bind("id", productId)
+                            .execute() > 0
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // Soft Delete: Chuyển trạng thái sang DELETED
+    public boolean deleteProduct(int productId) {
+        String sql = "UPDATE products SET status = 'DELETED' WHERE id = :id";
+        try {
+            return JDBIConnector.get().withHandle(handle ->
+                    handle.createUpdate(sql)
+                            .bind("id", productId)
+                            .execute() > 0
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // Đếm tổng số lượng manga còn hoạt động
+    public int countProducts() {
+        String sql = "SELECT COUNT(*) FROM products WHERE status <> 'DELETED'";
+        try {
+            return JDBIConnector.get().withHandle(handle ->
+                    handle.createQuery(sql)
+                            .mapTo(Integer.class)
+                            .one()
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0;
+        }
+    }
 }
