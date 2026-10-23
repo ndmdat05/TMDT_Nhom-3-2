@@ -7,8 +7,8 @@ import jakarta.mail.internet.MimeMessage;
 import java.util.Properties;
 
 public class EmailUntils {
-    private static final String MY_EMAIL = "23130024@st.hcmuaf.edu.vn";
-    private static final String MY_APP_PASSWORD = "njqv zadc nfsk abou";
+    private static final String MY_EMAIL = "";
+    private static final String MY_APP_PASSWORD = "";
 
     public static void sendMail(String toEmail, String subject, String content) throws Exception {
         Properties props = new Properties();

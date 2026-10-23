@@ -28,17 +28,19 @@ public class DBProperties {
         return prop.get("db.username").toString();
     }
     public static String password(){
-        return prop.get("db.password").toString();
+        return prop.getProperty("db.password", "");
     }
 
     public static String dbname(){
-        return prop.get("db.dbname").toString();
+        return "mangazdb";
     }
     public static String option(){
         return prop.get("db.option").toString();
     }
-    public static void main(){
-        System.out.println(host());
+    public static void main(String[] args) {
+        com.tmdt.db.JDBIConnector.get().useHandle(handle -> {
+            System.out.println("Kết nối MySQL thành công!");
+        });
     }
 
 }

@@ -24,7 +24,7 @@
 
     <!-- Menu Điều hướng & Nút Đăng bài -->
     <nav class="hidden lg:flex items-center gap-6">
-        <a href="#" class="text-indigo-600 font-bold text-sm border-b-2 border-indigo-600 pb-1 no-underline">Trang chủ</a>
+        <a href="${pageContext.request.contextPath}/" class="text-indigo-600 font-bold text-sm border-b-2 border-indigo-600 pb-1 no-underline">Trang chủ</a>
         <a href="#" class="text-gray-700 font-bold text-sm hover:text-indigo-600 flex items-center gap-1 no-underline">
             Khám phá <i class="fas fa-chevron-down text-[0.6rem] text-gray-400"></i>
         </a>
@@ -45,9 +45,13 @@
             <i class="far fa-heart text-xl"></i>
             <span class="absolute -top-1 -right-2 bg-indigo-600 text-white text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full border-2 border-white">3</span>
         </a>
-        <a href="#" class="text-gray-600 hover:text-indigo-600 relative transition-colors no-underline">
+        <a href="${pageContext.request.contextPath}/cart" class="text-gray-600 hover:text-indigo-600 relative transition-colors no-underline" title="Giỏ hàng">
             <i class="fas fa-shopping-cart text-xl"></i>
-            <span class="absolute -top-1 -right-2 bg-indigo-600 text-white text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full border-2 border-white">1</span>
+            <c:if test="${not empty sessionScope.cart && sessionScope.cart.totalQuantity > 0}">
+        <span class="absolute -top-1 -right-2 bg-indigo-600 text-white text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full border-2 border-white">
+                ${sessionScope.cart.totalQuantity}
+        </span>
+            </c:if>
         </a>
         <a href="#" class="text-gray-600 hover:text-indigo-600 relative transition-colors no-underline mr-2">
             <i class="far fa-bell text-xl"></i>
@@ -56,13 +60,15 @@
 
         <div class="border-l pl-4 border-gray-200 relative group">
             <c:choose>
-                <%-- NẾU ĐÃ ĐĂNG NHẬP --%>
-                <c:when test="${not empty sessionScope.account}">
+                <%-- NẾU ĐÃ ĐĂNG NHẬP (dùng sessionScope.user) --%>
+                <c:when test="${not empty sessionScope.user}">
+                    <c:set var="displayName" value="${not empty sessionScope.user.username ? sessionScope.user.username : (not empty sessionScope.user.full_name ? sessionScope.user.full_name : 'User')}" />
+
                     <div class="flex items-center gap-2 cursor-pointer">
                         <div class="relative">
-                                <%-- Lấy 2 chữ cái đầu của tên (Ví dụ: "Nguyen" -> "NG", "User" -> "US") --%>
+                                <%-- Lấy 2 chữ cái đầu làm avatar đại diện --%>
                             <div class="w-10 h-10 rounded-full bg-indigo-900 text-white flex items-center justify-center font-bold text-sm border-2 border-gray-100">
-                                    ${fn:substring(fn:toUpperCase(sessionScope.account.username), 0, 2)}
+                                    ${fn:toUpperCase(fn:substring(displayName, 0, 2))}
                             </div>
                             <div class="absolute -bottom-1 -right-1 bg-yellow-400 text-gray-900 rounded-full p-1 border-2 border-white flex items-center justify-center w-5 h-5">
                                 <i class="fas fa-cog text-[0.5rem]"></i>
@@ -71,20 +77,31 @@
                         <i class="fas fa-chevron-down text-gray-400 text-xs transition-transform group-hover:rotate-180"></i>
                     </div>
 
-                    <%-- Dropdown Menu (Sẽ hiện khi hover vào khối user) --%>
-                    <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 hidden group-hover:block border border-gray-100">
+                    <%-- Dropdown Menu khi hover chuột vào --%>
+                    <div class="absolute right-0 top-full pt-2 w-52 bg-white rounded-lg shadow-lg py-2 hidden group-hover:block border border-gray-100 z-50">
                         <div class="px-4 py-2 border-b border-gray-100">
-                            <p class="text-sm font-bold text-gray-900 truncate">${sessionScope.account.username}</p>
-                            <p class="text-xs text-gray-500 truncate">${sessionScope.account.email}</p>
+                            <p class="text-sm font-bold text-gray-900 truncate">
+                                    ${not empty sessionScope.user.full_name ? sessionScope.user.full_name : sessionScope.user.username}
+                            </p>
+                            <p class="text-xs text-gray-500 truncate">${sessionScope.user.email}</p>
                         </div>
-                        <a href="profile" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 no-underline"><i class="fas fa-user mr-2"></i>Tài khoản của tôi</a>
-                        <a href="logout" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-semibold no-underline"><i class="fas fa-sign-out-alt mr-2"></i>Đăng xuất</a>
+                        <a href="${pageContext.request.contextPath}/profile" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 no-underline">
+                            <i class="fas fa-user mr-2"></i>Tài khoản của tôi
+                        </a>
+                        <c:if test="${sessionScope.user.role eq 'ADMIN'}">
+                            <a href="${pageContext.request.contextPath}/dashboard" class="block px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 font-semibold no-underline">
+                                <i class="fas fa-chart-line mr-2"></i>Trang quản trị
+                            </a>
+                        </c:if>
+                        <a href="${pageContext.request.contextPath}/logout" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-semibold no-underline">
+                            <i class="fas fa-sign-out-alt mr-2"></i>Đăng xuất
+                        </a>
                     </div>
                 </c:when>
 
                 <%-- NẾU CHƯA ĐĂNG NHẬP --%>
                 <c:otherwise>
-                    <a href="login" class="flex items-center gap-2 cursor-pointer text-gray-600 hover:text-indigo-600 no-underline">
+                    <a href="${pageContext.request.contextPath}/login" class="flex items-center gap-2 cursor-pointer text-gray-600 hover:text-indigo-600 no-underline">
                         <i class="fas fa-user-circle text-2xl"></i>
                         <span class="text-sm font-bold">Đăng nhập</span>
                     </a>

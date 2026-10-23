@@ -11,8 +11,10 @@
     <title>Đặt lại mật khẩu | MangaZ</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="Css/Login.css">
+    <link rel="stylesheet" href="css/Login.css">
 </head>
 <body>
 <div class="mangaz-wrapper">
@@ -26,10 +28,7 @@
                 <h2 class="form-title">Đặt lại mật khẩu</h2>
                 <p class="form-subtitle">Tạo mật khẩu mới đủ mạnh để bảo vệ tài khoản của bạn.</p>
 
-                <c:if test="${not empty message || not empty sessionScope.message}">
-                    <p style="color: #10b981; font-weight: 600; margin-bottom: 15px;">${not empty message ? message : sessionScope.message}</p>
-                    <c:remove var="message" scope="session"/>
-                </c:if>
+
 
                 <c:if test="${not empty errorMessage || not empty sessionScope.errorMessage}">
                     <p style="color: #ef4444; font-weight: 600; margin-bottom: 15px;">${not empty errorMessage ? errorMessage : sessionScope.errorMessage}</p>
@@ -37,7 +36,7 @@
                 </c:if>
 
                 <form class="login-form" action="${pageContext.request.contextPath}/reset-pw" method="post">
-                    <input type="hidden" name="token" value="${param.token}" />
+                    <input type="hidden" name="token" value="${not empty token ? token : param.token}" />
                     <div class="input-group">
                         <label for="input-new-password">MẬT KHẨU MỚI</label>
                         <div class="input-wrapper">
@@ -60,7 +59,7 @@
                 </form>
 
                 <div class="terms-text" style="margin-top: 32px;">
-                    <a href="/dang-nhap" style="font-weight: 700; color: #4648d4;">Quay lại đăng nhập</a>
+                    <a href="${pageContext.request.contextPath}/login" style="font-weight: 700; color: #4648d4;">Quay lại đăng nhập</a>
                 </div>
             </div>
         </div>

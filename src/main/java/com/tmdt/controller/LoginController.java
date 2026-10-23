@@ -19,9 +19,15 @@ public class LoginController extends HttpServlet {
     }
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        request.setCharacterEncoding("UTF-8");
        String  username = request.getParameter("username");
        String password = request.getParameter("password");
-
+        request.setAttribute("username", username);
+        if (username == null || username.trim().isEmpty() || password == null || password.isEmpty()) {
+            request.setAttribute("errorMessage", "Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu!");
+            request.getRequestDispatcher("/Login.jsp").forward(request, response);
+            return;
+        }
 
        UserService userService = new UserService();
 
@@ -33,7 +39,7 @@ public class LoginController extends HttpServlet {
                request.getRequestDispatcher("/Login.jsp").forward(request, response);
                return;
            }
-           if(user.getStatus().equals("LOCKED")){
+           if ("LOCKED".equalsIgnoreCase(user.getStatus())){
                request.setAttribute("errorMessage", "Tài khoản của bạn đã bị khoá!");
                request.getRequestDispatcher("/Login.jsp").forward(request, response);
                return;

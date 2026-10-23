@@ -1,484 +1,329 @@
-
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java" isELIgnored="false" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 
-<html>
+<!DOCTYPE html>
+<html lang="vi">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="One Piece - Tập 1, bản in đầu 2003, tình trạng Like New 95%.">
-    <title>One Piece - Tập 1 (Bản in đầu 2003)</title>
+    <title><c:out value="${product.title}" default="Chi tiết sản phẩm" /> - MANGAZ</title>
 
-    <!-- Font Awesome 6 Free CDN -->
+    <!-- Tailwind CSS CDN & Font Awesome -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/TrangChiTiet.css">
 </head>
-<body>
-<header class="header">
-    <a class="container" href="${pageContext.request.contextPath}/" aria-label="MANGAZ - Trang chủ">
-        <div class="background logo-badge">
-            <i class="fa-solid fa-book-bookmark"></i>
-        </div>
-        <div class="div">
-            <div class="div-wrapper">
-                <span class="MAN-ga-z">MANGAZ</span>
-            </div>
-            <div class="div-wrapper">
-                <span class="text">COLLECTOR EXCHANGE</span>
-            </div>
-        </div>
-    </a>
+<body class="bg-[#fcfcfd] text-[#141b2b] font-sans">
 
-    <form class="container-2" role="search" action="${pageContext.request.contextPath}/search" method="GET">
-        <label class="input">
-            <span class="div-wrapper">
-                <input
-                        class="text-wrapper"
-                        type="search"
-                        name="query"
-                        placeholder="Tìm kiếm truyện, bài đăng và users"
-                        aria-label="Tìm kiếm truyện, bài đăng và users"
-                        autocomplete="off"
-                >
-            </span>
-            <i class="fa-solid fa-magnifying-glass icon" aria-hidden="true"></i>
-        </label>
-    </form>
+<%@ include file="includes/header.jsp" %>
 
-    <nav aria-label="Điều hướng chính">
-        <a class="link" href="${pageContext.request.contextPath}/" aria-current="page">
-            <span class="text-wrapper-2">Trang chủ</span>
-        </a>
-        <a class="link-2" href="${pageContext.request.contextPath}/kham-pha">
-            <span class="text-wrapper-3">Khám phá</span>
-        </a>
-        <span class="container-wrapper" aria-hidden="true">
-            <i class="fa-solid fa-chevron-down img"></i>
+<!-- Fallback kiểm tra tồn kho -->
+<c:set var="currentStock" value="${product.stockQuantity}" />
+<div class="max-w-[1184px] mx-auto px-4 py-4">
+    <!-- BREADCRUMB -->
+    <nav class="flex items-center justify-between py-2 text-xs text-gray-500" aria-label="Breadcrumb">
+        <ol class="flex items-center gap-2">
+            <li>
+                <a class="hover:text-indigo-600 flex items-center gap-1" href="${pageContext.request.contextPath}/home">
+                    <i class="fa-solid fa-house text-indigo-600"></i> Trang chủ
+                </a>
+            </li>
+            <li>/</li>
+            <li>
+                <a class="hover:text-indigo-600" href="${pageContext.request.contextPath}/products">Manga</a>
+            </li>
+            <c:if test="${not empty product.series_name}">
+                <li>/</li>
+                <li>
+                    <a class="hover:text-indigo-600" href="${pageContext.request.contextPath}/products?series=${product.series_name}">
+                        <c:out value="${product.series_name}" />
+                    </a>
+                </li>
+            </c:if>
+            <li>/</li>
+            <li class="font-semibold text-gray-900 truncate max-w-[280px]">
+                <c:out value="${product.title}" />
+            </li>
+        </ol>
+        <span class="bg-indigo-50 text-indigo-600 font-bold px-2.5 py-1 rounded-md text-[11px]">
+            MÃ TIN: #MG-<c:out value="${product.id}" default="01" />
         </span>
-        <a class="link-3" href="${pageContext.request.contextPath}/dau-gia">
-            <span class="container-3" aria-hidden="true">
-                <span class="background-2"></span>
-            </span>
-            <span class="div">
-                <span class="text-wrapper-3">Đấu giá</span>
-            </span>
-        </a>
-        <div class="nav">
-            <a class="link-4" href="${pageContext.request.contextPath}/cong-dong">
-                <span class="text-wrapper-3">Cộng đồng</span>
-            </a>
-        </div>
     </nav>
 
-    <div class="container-4">
-        <button class="link-5" type="button" onclick="location.href='seller-manage.jsp'">
-            <span class="link-shadow" aria-hidden="true"></span>
-            <span class="div">
-                <i class="fa-solid fa-circle-plus icon-2" aria-hidden="true"></i>
-            </span>
-            <span class="div">
-                <span class="p">+ Đăng bài / Trade</span>
-            </span>
-        </button>
+    <!-- KHỐI CHÍNH: 1 ẢNH & THÔNG TIN ĐẶT MUA -->
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-8 mt-4">
+        <!-- CỘT TRÁI: 1 ẢNH SẢN PHẨM -->
+        <section class="md:col-span-7">
+            <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm aspect-[4/3] flex items-center justify-center relative p-4 bg-[#f8faff]">
+                <c:set var="productImg" value="${not empty product.image_url ? (product.image_url.startsWith('http') ? product.image_url : (product.image_url.startsWith('./') ? pageContext.request.contextPath.concat('/').concat(product.image_url.substring(2)) : pageContext.request.contextPath.concat('/').concat(product.image_url))) : pageContext.request.contextPath.concat('/Image/manga_01.jpg')}" />
+                <img src="${productImg}" alt="${product.title}" class="max-h-full max-w-full object-contain drop-shadow-md">
 
-        <div class="container-5">
-            <!-- Icon Kệ sách / Wishlist -->
-            <button class="div-2" type="button" aria-label="Kệ sách yêu thích">
-                <span class="div">
-                    <i class="fa-regular fa-heart icon-3" aria-hidden="true"></i>
-                </span>
-                <span class="background-4" aria-label="3 mục yêu thích">
-                    <span class="text-wrapper-4">3</span>
-                </span>
-            </button>
-
-            <!-- Icon Giỏ hàng -->
-            <button class="div-2" type="button" aria-label="Giỏ hàng">
-                <span class="div">
-                    <i class="fa-solid fa-cart-shopping icon-4" aria-hidden="true"></i>
-                </span>
-                <span class="background-4" aria-label="1 sản phẩm trong giỏ">
-                    <span class="text-wrapper-4">1</span>
-                </span>
-            </button>
-
-            <!-- Icon Chuông thông báo -->
-            <button class="div-2" type="button" aria-label="Thông báo mới">
-                <span class="icon-wrapper">
-                    <i class="fa-regular fa-bell icon-5" aria-hidden="true"></i>
-                </span>
-                <span class="overlay-shadow-wrapper" aria-hidden="true">
-                    <span class="overlay-shadow"></span>
-                </span>
-            </button>
-        </div>
-
-        <!-- Avatar người dùng có tích xác thực -->
-        <div class="user-avatar-frame">
-            <img class="container-6" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="Ảnh đại diện người dùng">
-            <span class="user-verify-tag"><i class="fa-solid fa-check"></i></span>
-        </div>
-    </div>
-</header>
-
-<!-- NỘI DUNG TRANG CHI TIẾT SẢN PHẨM -->
-<div class="background">
-    <nav class="top-utility" aria-label="Điều hướng đường dẫn">
-        <div class="container-wrapper">
-            <div class="container">
-                <ol class="div" aria-label="Breadcrumb">
-                    <li class="div-2">
-                        <a class="div-3" href="${pageContext.request.contextPath}/" aria-label="Trang chủ">
-                            <span class="text">Trang chủ</span>
-                        </a>
-                    </li>
-                    <li class="div-3" aria-hidden="true"><span class="text-wrapper">/</span></li>
-                    <li class="div-3"><a class="text" href="${pageContext.request.contextPath}/danh-muc-manga">Danh mục Manga</a></li>
-                    <li class="div-3" aria-hidden="true"><span class="text-wrapper">/</span></li>
-                    <li class="div-3"><a class="text" href="${pageContext.request.contextPath}/danh-muc-manga/shonen">Shonen</a></li>
-                    <li class="div-3" aria-hidden="true"><span class="text-wrapper">/</span></li>
-                    <li class="div-3"><a class="text" href="${pageContext.request.contextPath}/manga/one-piece">One Piece</a></li>
-                    <li class="div-3" aria-hidden="true"><span class="text-wrapper">/</span></li>
-                    <li class="div-3" aria-current="page"><span class="p">One Piece - Tập 1 (Bản in đầu 2003)</span></li>
-                </ol>
+                <div class="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-gray-100 shadow-sm flex items-center gap-2 text-xs font-bold text-gray-800">
+                    <i class="fa-solid fa-magnifying-glass-plus text-indigo-600"></i>
+                    <span>Ảnh thực tế</span>
+                </div>
             </div>
-        </div>
-    </nav>
-    <main>
-        <div class="div-wrapper">
-            <div class="primary-showcase">
-                <section class="left-column-gallery" aria-label="Hình ảnh sản phẩm">
-                    <div class="main-visual-stage">
-                        <div class="interactive-aspect" role="img" aria-label="Hình ảnh One Piece tập 1 bản in đầu năm 2003">
-                            <div class="div-4"></div>
-                            <div class="high-precision">
-                                <div class="div-3"><i class="fa-solid fa-magnifying-glass-plus img-zoom"></i></div>
-                                <p class="text-5">Hover để soi thớ giấy &amp; mép gáy x60</p>
+        </section>
+
+        <!-- CỘT PHẢI: CHI TIẾT & FORM MUA HÀNG -->
+        <section class="md:col-span-5 flex flex-col gap-4">
+            <div>
+                <div class="flex items-center gap-2 mb-2">
+                    <c:choose>
+                        <c:when test="${product.item_condition == 'NEW'}">
+                            <span class="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold px-2 py-0.5 rounded">MỚI 100% (SEAL)</span>
+                        </c:when>
+                        <c:when test="${product.item_condition == 'LIKE_NEW'}">
+                            <span class="bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-bold px-2 py-0.5 rounded">LIKE NEW (SƯU TẦM)</span>
+                        </c:when>
+                        <c:otherwise>
+                            <span class="bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold px-2 py-0.5 rounded">ĐÃ QUA SỬ DỤNG</span>
+                        </c:otherwise>
+                    </c:choose>
+                    <c:if test="${not empty product.edition}">
+                        <span class="bg-gray-100 text-gray-700 text-xs font-bold px-2 py-0.5 rounded"><c:out value="${product.edition}" /></span>
+                    </c:if>
+                </div>
+
+                <h1 class="text-2xl font-black text-gray-900 leading-snug">
+                    <c:out value="${product.title}" />
+                </h1>
+
+                <div class="flex items-center gap-2 text-xs text-gray-500 mt-2">
+                    <span>Tác giả: <strong class="text-gray-800"><c:out value="${not empty product.author ? product.author : 'Chưa cập nhật'}" /></strong></span>
+                    <span>•</span>
+                    <span>Tập: <strong class="text-gray-800"><c:out value="${not empty product.volume_number ? product.volume_number : '1'}" /></strong></span>
+                </div>
+            </div>
+
+            <!-- HỒ SƠ NGƯỜI BÁN -->
+            <div class="bg-white p-3.5 rounded-xl border border-gray-200 flex flex-col gap-3 shadow-sm">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg overflow-hidden bg-indigo-50 flex-shrink-0">
+                        <img src="${not empty product.sellerAvatar ? product.sellerAvatar : pageContext.request.contextPath.concat('/Image/manga_01.jpg')}" class="w-full h-full object-cover">
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="font-bold text-sm text-gray-900"><c:out value="${not empty product.sellerName ? product.sellerName : 'Chủ Shop'}" /></span>
+                            <i class="fa-solid fa-circle-check text-indigo-600 text-xs" title="Người bán uy tín"></i>
+                        </div>
+                        <p class="text-xs text-gray-400">Thành viên xác thực sàn MangaZ</p>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <a href="${pageContext.request.contextPath}/shop?id=${product.seller_id}" class="flex-1 py-2 text-center bg-gray-50 hover:bg-gray-100 text-gray-800 font-bold text-xs rounded-lg transition border border-gray-200">
+                        <i class="fa-solid fa-store mr-1"></i> Xem Tủ Sách
+                    </a>
+                    <a href="${pageContext.request.contextPath}/chat?receiverId=${product.seller_id}&productId=${product.id}" class="flex-1 py-2 text-center bg-gray-50 hover:bg-gray-100 text-gray-800 font-bold text-xs rounded-lg transition border border-gray-200">
+                        <i class="fa-solid fa-comment-dots mr-1"></i> Nhắn tin riêng
+                    </a>
+                </div>
+            </div>
+
+            <!-- KHỐI GIÁ & FORM MUA HÀNG (CHỈ THÊM GIỎ + WISHLIST) -->
+            <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col gap-4">
+                <div>
+                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">GIÁ NIÊM YẾT CÔNG KHAI</span>
+                    <div class="text-3xl font-black text-gray-900 mt-1 flex items-baseline gap-1">
+                        <fmt:formatNumber value="${product.price}" type="number" groupingUsed="true" />
+                        <span class="text-lg font-bold text-indigo-600">đ</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 text-xs mt-1">
+                        <i class="fa-solid fa-box-archive text-gray-400 text-xs"></i>
+                        <span class="text-gray-500">Tồn kho:</span>
+                        <strong class="${currentStock > 0 ? 'text-emerald-600' : 'text-rose-600'} font-bold">
+                            ${currentStock > 0 ? currentStock : 0} cuốn
+                        </strong>
+                    </div>
+                </div>
+
+                <!-- FORM ĐẶT HÀNG -->
+                <form action="${pageContext.request.contextPath}/cart" method="post" class="flex flex-col gap-3 m-0">
+                    <input type="hidden" name="productId" value="${product.id}">
+
+                    <c:if test="${currentStock > 0}">
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs font-bold text-gray-700 uppercase">Số lượng:</span>
+                            <div class="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white">
+                                <button type="button" onclick="adjustQty(-1)" class="w-8 h-8 flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold transition">-</button>
+                                <input type="number" id="quantity" name="quantity" value="1" min="1" max="${currentStock}"
+                                       class="w-12 h-8 text-center font-bold text-sm outline-none border-x border-gray-200">
+                                <button type="button" onclick="adjustQty(1)" class="w-8 h-8 flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold transition">+</button>
                             </div>
                         </div>
-                    </div>
-                    <div class="div-7" role="group" aria-label="Các góc chụp sản phẩm">
-                        <button class="button" type="button" aria-label="Xem bìa trước">
-                            <div class="margin-2"><div class="div-wrapper-2"><div class="abaxubynucrvp"></div></div></div>
-                            <div class="container-2"><span class="text-8">Bìa trước</span></div>
-                        </button>
-                        <button class="button" type="button" aria-label="Xem bìa sau">
-                            <div class="margin-2"><div class="div-wrapper-2"><div class="div-8"></div></div></div>
-                            <div class="container-3"><span class="text-8">Bìa sau</span></div>
-                        </button>
-                        <button class="button" type="button" aria-label="Xem gáy sách">
-                            <div class="margin-2"><div class="div-wrapper-2"><div class="div-9"></div></div></div>
-                            <div class="container-2"><span class="text-8">Gáy sách</span></div>
-                        </button>
-                        <button class="button" type="button" aria-label="Xem mép trên">
-                            <div class="margin-2"><div class="div-wrapper-2"><div class="div-10"></div></div></div>
-                            <div class="container-3"><span class="text-8">Mép trên (ố 10%)</span></div>
-                        </button>
-                        <button class="button" type="button" aria-label="Xem mép dưới">
-                            <div class="margin-2"><div class="div-wrapper-2"><div class="div-11"></div></div></div>
-                            <div class="container-3"><span class="text-8">Mép dưới</span></div>
-                        </button>
-                        <button class="button" type="button" aria-label="Xem bìa lót và Obi">
-                            <div class="margin-2"><div class="div-wrapper-2"><div class="div-12"></div></div></div>
-                            <div class="container-2"><span class="text-8">Bìa lót &amp; Obi</span></div>
-                        </button>
-                    </div>
-                </section>
-                <section class="right-column" aria-labelledby="product-title">
-                    <header class="manga-title-series">
-                        <div class="container-4">
-                            <div class="text-wrapper-2"><span class="text-12">SHŌNEN JUMP 2003</span></div>
-                            <div class="div-3"><p class="text">Lưu kho: Kho lạnh #HN-02</p></div>
-                        </div>
-                        <div class="heading">
-                            <h1 class="one-piece-t-p-b-a" id="product-title">One Piece - Tập 1 (Bìa Rời Gốc, Bản In<br>Đầu 2003)</h1>
-                        </div>
-                        <div class="div-wrapper-3">
-                            <p class="t-c-ph-m-kinh-i-n-c">Tác phẩm kinh điển của Eiichiro Oda. Ấn bản xuất xưởng đầu tiên tại thị trường<br>phát hành, giữ nguyên bìa áo gập mép và sắc độ màu rực rỡ chưa suy giảm qua<br>hơn 2 thập kỷ.</p>
-                        </div>
-                    </header>
-                    <section class="condition-provenance" aria-label="Tình trạng và nguồn gốc">
-                        <div class="container-4">
-                            <div class="div-3"><i class="fa-solid fa-certificate icon-check-cert"></i></div>
-                            <div class="div-3"><p class="text-13">Tình trạng: Like New 95% • Giấy ố nhẹ viền theo 21 năm</p></div>
-                        </div>
-                        <div class="container-5">
-                            <div class="background-shadow-4"><div class="div-13"></div><p class="text-5">Bản in đầu 2003 (1st Edition)</p></div>
-                            <div class="background-shadow-5"><div class="div-14"></div><p class="text-5">Đầy đủ Obi &amp; Bookmark gốc</p></div>
-                            <div class="background-shadow-6"><div class="div-15"></div><p class="text-5">Chưa qua hóa chất tẩy ố</p></div>
-                        </div>
-                    </section>
-                    <section class="seller-dossier-box" aria-label="Thông tin người bán">
-                        <div class="container-6">
-                            <div class="div">
-                                <div class="div-wrapper-4"><div class="div-16"></div></div>
-                                <div class="div-3">
-                                    <div class="container-7">
-                                        <div class="div-3"><span class="text-wrapper-3">Kenji Vault</span></div>
-                                        <div class="div-3"><i class="fa-solid fa-circle-check icon-seller-verified"></i></div>
-                                    </div>
-                                    <div class="container-8">
-                                        <div class="container-9">
-                                            <div class="div-3"><i class="fa-solid fa-star icon-rating-star"></i></div>
-                                            <span class="text-14">4.9/5</span>
-                                        </div>
-                                        <div class="div-3"><span class="text">•</span></div>
-                                        <div class="div-3"><p class="text">38 giao dịch thành công</p></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="container-10"><div class="div-17"><div class="div-13"></div><span class="text-15">&lt; 15 phút</span></div></div>
-                        </div>
-                        <div class="container-11">
-                            <a class="link" href="${pageContext.request.contextPath}/seller/kenji-vault">
-                                <div class="div-3"><i class="fa-solid fa-book-open icon-action"></i></div>
-                                <span class="text-9">Tủ sách (24 cuốn)</span>
-                            </a>
-                            <button class="button-3" type="button">
-                                <span class="icon-wrapper"><i class="fa-solid fa-comment-dots icon-action"></i></span>
-                                <span class="text-9">Nhắn tin riêng</span>
+
+                        <!-- 2 NÚT DUY NHẤT: THÊM VÀO GIỎ & WISHLIST CẠNH NHAU -->
+                        <div class="flex items-center gap-2.5 mt-1">
+                            <button type="submit" name="action" value="add"
+                                    class="flex-1 h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-sm transition">
+                                <i class="fa-solid fa-cart-plus text-base"></i>
+                                <span class="text-sm">Thêm vào giỏ hàng</span>
+                            </button>
+
+                            <button type="submit" formaction="${pageContext.request.contextPath}/wishlist"
+                                    class="h-12 w-12 flex-shrink-0 flex items-center justify-center rounded-xl border transition ${isFavorited ? 'bg-rose-50 border-rose-200 text-rose-600' : 'bg-gray-50 hover:bg-rose-50 border-gray-200 hover:border-rose-200 text-gray-500 hover:text-rose-500'}"
+                                    title="${isFavorited ? 'Bỏ lưu khỏi kệ sách' : 'Lưu vào kệ sách'}">
+                                <i class="${isFavorited ? 'fa-solid text-rose-500' : 'fa-regular'} fa-heart text-lg"></i>
                             </button>
                         </div>
-                    </section>
-                    <section class="pricing-core-escrow" aria-label="Giá và mua hàng">
-                        <div class="container-12">
-                            <p class="text-2">GIÁ NIÊM YẾT CÔNG KHAI</p>
-                            <div class="container-13">
-                                <div class="paragraph"><span class="text-16">450.000</span><span class="text-17">đ</span></div>
-                                <div class="container-14"><div class="div-3"><span class="text-18">550.000 đ</span></div><div class="text-wrapper-4"><span class="text-19">-18%</span></div></div>
-                            </div>
-                            <div class="container-15">
-                                <div class="div-3"><i class="fa-solid fa-shield-halved icon-labs"></i></div>
-                                <div class="div-3"><p class="text">Đã hoàn tất giám định vật lý bởi MangaVault Labs</p></div>
-                            </div>
-                        </div>
-                        <div class="purchase-cart-action">
-                            <div class="div-7">
-                                <button class="button-4" type="button">
-                                    <div class="button-shadow"></div>
-                                    <span class="icon-wrapper"><i class="fa-solid fa-bag-shopping icon-btn-buy"></i></span>
-                                    <span class="text-wrapper-5">Mua ngay</span>
-                                </button>
-                                <button class="button-5" type="button" aria-label="Thêm sản phẩm vào giỏ hàng">
-                                    <span class="icon-wrapper"><i class="fa-solid fa-cart-plus icon-btn-cart"></i></span>
-                                </button>
-                            </div>
-                            <div class="trade-availability">
-                                <div class="img-wrapper"><i class="fa-solid fa-arrow-right-arrow-left icon-trade"></i></div>
-                                <div class="container-16">
-                                    <p class="text-20">
-                                        <span class="span">Lựa chọn Trao đổi (Trade):</span>
-                                        <span class="text-wrapper-6">Người bán sẵn sàng đổi ngang với</span><span class="span"><br></span>
-                                        <span class="text-wrapper-7">Bleach Tập 1 (2008)</span><span class="text-wrapper-6"> hoặc </span><span class="text-wrapper-7">Dragon Ball 1996</span><span class="text-wrapper-6"> bìa đẹp (thương lượng</span><span class="span"><br></span>
-                                        <span class="text-wrapper-6">bù trừ qua sàn).</span>
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-                </section>
-            </div>
-        </div>
+                    </c:if>
 
-        <!-- Khối Giới Thiệu Sản Phẩm -->
-        <div class="div-wrapper">
-            <section class="product-intro-section" aria-labelledby="product-intro-title">
-                <div class="intro-badge">
-                    <span>GIỚI THIỆU SẢN PHẨM</span>
-                </div>
-                <h2 class="intro-title" id="product-intro-title">
-                    Ấn Bản Manga Sưu Tầm Đặc Biệt &amp; Giá Trị Lịch Sử
-                </h2>
-                <div class="intro-content">
-                    <p>
-                        Bộ truyện <strong>One Piece - Tập 1 (Bản in đầu 2003)</strong> là một trong những ấn phẩm manga hiếm và có giá trị sưu tầm bậc nhất trên thị trường hiện nay[cite: 10]. Tác phẩm giữ trọn vẹn chất lượng từ ngày đầu phát hành với đầy đủ bìa rời, bìa áo nguyên bản, cùng các phụ kiện đi kèm như Bookmark và Obi zin chưa qua can thiệp tẩy ố[cite: 10].
-                    </p>
-                    <p>
-                        Đây là lựa chọn lý tưởng dành cho những nhà sưu tầm đang tìm kiếm mảnh ghép hoàn thiện cho kệ sách của mình, được đảm bảo chất lượng và quy trình lưu kho tiêu chuẩn qua cơ chế ký quỹ an toàn của hệ thống[cite: 1, 2].
-                    </p>
-                </div>
-            </section>
-        </div>
+                    <c:if test="${currentStock <= 0}">
+                        <button class="w-full h-12 bg-gray-200 text-gray-500 font-bold rounded-xl cursor-not-allowed" type="button" disabled>
+                            Ấn phẩm tạm hết hàng
+                        </button>
+                    </c:if>
+                </form>
 
-        <!-- Khối Bộ Sưu Tập Tương Quan -->
-        <div class="div-wrapper">
-            <section class="div-18" aria-labelledby="related-title">
-                <header class="container-18">
-                    <div class="div-3">
-                        <div class="div-wrapper-3"><p class="text-3">BỘ SƯU TẬP TƯƠNG QUAN</p></div>
-                        <div class="div-wrapper-3"><h2 class="text-26" id="related-title">Tập Khác Cùng Bộ &amp; Bản Hiếm Tuyển Chọn</h2></div>
-                    </div>
-                    <a class="div-2 link-vault" href="${pageContext.request.contextPath}/manga/one-piece">
-                        <span class="text-25">Xem tất cả One Piece Vault</span>
-                        <div class="div-3"><i class="fa-solid fa-arrow-right icon-arrow"></i></div>
-                    </a>
-                </header>
-                <div class="container-19">
-                    <article class="link-card">
-                        <div class="container-20"><span class="text-wrapper-8">ONE PIECE #2</span></div>
-                        <div class="heading-2"><h3 class="text-wrapper-3">Tập 2: Chàng Thợ Săn Hải Tặc</h3></div>
-                        <div class="margin-3">
-                            <div class="container-21">
-                                <div class="div-3"><span class="text-wrapper-3">380.000 đ</span></div>
-                                <div class="div-3"><span class="text-10">Grade 8.8</span></div>
-                            </div>
-                        </div>
-                        <div class="margin-4">
-                            <div class="div-27">
-                                <div class="div-28"></div>
-                                <div class="text-wrapper-9"><span class="text-5">1st Edition</span></div>
-                            </div>
-                        </div>
-                    </article>
-                    <article class="link-card">
-                        <div class="container-20"><span class="text-wrapper-8">ONE PIECE #4</span></div>
-                        <div class="heading-2"><h3 class="text-wrapper-3">Tập 4: Lưỡi Kiếm Nguyện Ước</h3></div>
-                        <div class="margin-3">
-                            <div class="container-22">
-                                <div class="div-3"><span class="text-wrapper-3">420.000 đ</span></div>
-                                <div class="div-3"><span class="text-10">Grade 9.0</span></div>
-                            </div>
-                        </div>
-                        <div class="margin-4">
-                            <div class="div-27">
-                                <div class="div-29"></div>
-                                <div class="text-wrapper-9"><span class="text-5">Kèm Obi Gốc</span></div>
-                            </div>
-                        </div>
-                    </article>
-                    <article class="link-card">
-                        <div class="container-20"><span class="text-wrapper-8">DRAGON BALL 1996</span></div>
-                        <div class="heading-2"><h3 class="text-wrapper-3">Tập 1: Viên Ngọc Rồng Đầu Tiên</h3></div>
-                        <div class="margin-3">
-                            <div class="container-21">
-                                <div class="div-3"><span class="text-wrapper-3">1.250.000 đ</span></div>
-                                <div class="div-3"><span class="text-10">Grade 8.5</span></div>
-                            </div>
-                        </div>
-                        <div class="margin-4">
-                            <div class="div-27">
-                                <div class="div-30"></div>
-                                <div class="text-wrapper-10"><span class="text-7">Hiếm Cực Độ</span></div>
-                            </div>
-                        </div>
-                    </article>
-                    <article class="link-card">
-                        <div class="container-20"><span class="text-wrapper-8">BLEACH #1</span></div>
-                        <div class="heading-2"><h3 class="text-wrapper-3">Tập 1: Tử Thần &amp; Dâu Tây</h3></div>
-                        <div class="margin-3">
-                            <div class="container-22">
-                                <div class="div-3"><span class="text-wrapper-3">520.000 đ</span></div>
-                                <div class="div-3"><span class="text-10">Grade 9.4</span></div>
-                            </div>
-                        </div>
-                        <div class="margin-4">
-                            <div class="div-27">
-                                <div class="abaxudrqyaftmqmvbm"></div>
-                                <div class="text-wrapper-9"><span class="text-5">Bản In 2008</span></div>
-                            </div>
-                        </div>
-                    </article>
-                </div>
-            </section>
-        </div>
-    </main>
-</div>
-<footer class="footer">
-    <div class="container">
-        <section class="div" aria-label="Thông tin MangaVault">
-            <!-- Cột 1: Thông tin thương hiệu -->
-            <section class="container-2" aria-labelledby="brand-name">
-                <div class="div-wrapper">
-                    <div class="text-wrapper" id="brand-name">MangaVault</div>
-                </div>
-                <div class="s-n-giao-d-ch-truy-n-wrapper">
-                    <p class="s-n-giao-d-ch-truy-n">
-                        Sàn giao dịch truyện tranh, ấn bản<br>
-                        hiếm &amp; vật phẩm sưu tầm xác thực<br>
-                        bản quyền số 1 tại Đông Nam Á.
-                    </p>
-                </div>
-                <div class="background-border" aria-label="100% bảo chứng Escrow">
-                    <div class="container-3">
-                        <i class="fa-solid fa-shield-halved icon"></i>
-                    </div>
-                    <div class="text">100% BẢO CHỨNG ESCROW</div>
-                </div>
-            </section>
-
-            <!-- Cột 2: Danh mục -->
-            <nav class="container-4" aria-labelledby="archive-heading">
-                <div class="div-wrapper">
-                    <h2 class="text-wrapper-2" id="archive-heading">DANH MỤC LƯU TRỮ</h2>
-                </div>
-                <ul class="list">
-                    <li class="div-wrapper"><a href="${pageContext.request.contextPath}/danh-muc-manga/shonen" class="text-wrapper-3">Shonen Originals</a></li>
-                    <li class="div-wrapper"><a href="#" class="text-wrapper-3">Seinen Masterpieces</a></li>
-                    <li class="div-wrapper"><a href="#" class="text-wrapper-3">Shojo Vintage Classics</a></li>
-                    <li class="div-wrapper"><a href="#" class="text-wrapper-3">Tankōbon First Editions</a></li>
-                </ul>
-            </nav>
-
-            <!-- Cột 3: Dịch vụ -->
-            <nav class="container-4" aria-labelledby="collector-heading">
-                <div class="div-wrapper">
-                    <h2 class="text-wrapper-2" id="collector-heading">DỊCH VỤ COLLECTOR</h2>
-                </div>
-                <ul class="list">
-                    <li class="div-wrapper"><a href="${pageContext.request.contextPath}/dau-gia" class="text-wrapper-3">Đấu Giá Trực Tiếp</a></li>
-                    <li class="div-wrapper"><a href="#" class="text-wrapper-3">Thẩm Định &amp; Đóng Slab</a></li>
-                    <li class="div-wrapper"><a href="#" class="text-wrapper-3">Lịch Private Drops</a></li>
-                    <li class="div-wrapper"><a href="#" class="text-wrapper-3">Ký Quỹ Ví Vault</a></li>
-                </ul>
-            </nav>
-
-            <!-- Cột 4: Ký quỹ & Pháp lý -->
-            <nav class="container-4" aria-labelledby="legal-heading">
-                <div class="div-wrapper">
-                    <h2 class="text-wrapper-2" id="legal-heading">KÝ QUỸ &amp; PHÁP LÝ</h2>
-                </div>
-                <ul class="list">
-                    <li class="div-wrapper"><a href="#" class="text-wrapper-3">Bảo Hiểm Ký Quỹ Escrow</a></li>
-                    <li class="div-wrapper"><a href="#" class="text-wrapper-3">Quy Trình Giám Định Sàn</a></li>
-                    <li class="div-wrapper"><a href="#" class="text-wrapper-3">Chính Sách Hoàn Tiền 100%</a></li>
-                    <li class="div-wrapper"><a href="#" class="text-wrapper-3">Điều Khoản Sử Dụng Sàn</a></li>
-                </ul>
-            </nav>
-
-            <!-- Cột 5: Hỗ trợ -->
-            <nav class="container-5" aria-labelledby="support-heading">
-                <div class="div-wrapper">
-                    <h2 class="text-wrapper-2" id="support-heading">TRUNG TÂM HỖ TRỢ</h2>
-                </div>
-                <ul class="list">
-                    <li class="div-wrapper"><a href="#" class="text-wrapper-3">Yêu Cầu Hỗ Trợ 24/7</a></li>
-                    <li class="div-wrapper"><a href="#" class="text-wrapper-3">Quy Chuẩn Đóng Gói Manga</a></li>
-                    <li class="div-wrapper"><a href="#" class="text-wrapper-3">Tra Cứu Mã Chứng Thư (API)</a></li>
-                    <li class="div-wrapper"><a href="#" class="text-wrapper-3">Quan Hệ Đối Tác &amp; NXB</a></li>
-                </ul>
-            </nav>
-        </section>
-
-        <!-- Dòng bản quyền & Chứng nhận phía dưới -->
-        <section class="horizontal-border" aria-label="Thông tin bản quyền và bảo mật">
-            <div class="container-3">
-                <p class="text-2">© 2026 MangaVault Exchange Inc. Mọi quyền được bảo lưu.</p>
-            </div>
-            <div class="container-6">
-                <div class="container-3">
-                    <p class="text-2">Bảo mật dữ liệu ISO 27001</p>
-                </div>
-                <div class="container-3" aria-hidden="true">
-                    <div class="text-2">•</div>
-                </div>
-                <div class="container-3">
-                    <p class="text-2">Chứng thực chữ ký số SHA-256</p>
+                <div class="text-[11px] text-gray-500 bg-gray-50 p-2.5 rounded-lg flex items-center gap-2 border border-gray-100">
+                    <i class="fa-solid fa-shield-check text-indigo-600 text-sm"></i>
+                    <span>100% Bảo hiểm Ký Quỹ Escrow - Đổi trả nếu sai mô tả</span>
                 </div>
             </div>
         </section>
     </div>
-</footer>
+
+    <!-- HỆ THỐNG TAB NỘI DUNG -->
+    <div class="mt-10">
+        <!-- 3 Nút Tab -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-1">
+            <button id="btn-tab-specs" type="button" onclick="switchTab('tab-specs')"
+                    class="tab-btn px-6 py-3 rounded-lg font-bold text-sm flex items-center gap-2 bg-[#4a4bf1] text-white shadow-sm transition">
+                <i class="fa-solid fa-table-list"></i> Bảng Thông Số & Tình Trạng
+            </button>
+            <button id="btn-tab-desc" type="button" onclick="switchTab('tab-desc')"
+                    class="tab-btn px-6 py-3 rounded-lg font-bold text-sm flex items-center gap-2 bg-[#f0f3fd] text-gray-600 hover:bg-gray-200 transition">
+                <i class="fa-solid fa-pen-nib"></i> Ghi Chú Người Bán & Lưu Trữ
+            </button>
+            <button id="btn-tab-comments" type="button" onclick="switchTab('tab-comments')"
+                    class="tab-btn px-6 py-3 rounded-lg font-bold text-sm flex items-center gap-2 bg-[#f0f3fd] text-gray-600 hover:bg-gray-200 transition">
+                <i class="fa-solid fa-comments"></i> Hỏi Đáp & Công Khai
+            </button>
+        </div>
+
+        <!-- TAB 1: BẢNG THÔNG SỐ (2 CỘT NỀN NHẠT ĐÚNG HÌNH MẪU) -->
+        <div id="tab-specs" class="tab-panel mt-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div class="bg-[#f4f7fe] rounded-lg px-5 py-3.5 flex items-center justify-between border border-[#edf2fd]">
+                    <span class="text-sm text-gray-500 font-medium">Tác giả & Minh hoạ</span>
+                    <span class="text-sm font-bold text-gray-900"><c:out value="${not empty product.author ? product.author : 'Chưa cập nhật'}" /></span>
+                </div>
+                <div class="bg-[#f4f7fe] rounded-lg px-5 py-3.5 flex items-center justify-between border border-[#edf2fd]">
+                    <span class="text-sm text-gray-500 font-medium">Thuộc bộ truyện (Series)</span>
+                    <span class="text-sm font-bold text-gray-900"><c:out value="${not empty product.series_name ? product.series_name : 'Truyện đơn tập'}" /></span>
+                </div>
+                <div class="bg-[#f4f7fe] rounded-lg px-5 py-3.5 flex items-center justify-between border border-[#edf2fd]">
+                    <span class="text-sm text-gray-500 font-medium">Tập số thực tế</span>
+                    <span class="text-sm font-bold text-gray-900">Tập <c:out value="${not empty product.volume_number ? product.volume_number : '1'}" /></span>
+                </div>
+                <div class="bg-[#f4f7fe] rounded-lg px-5 py-3.5 flex items-center justify-between border border-[#edf2fd]">
+                    <span class="text-sm text-gray-500 font-medium">Phiên bản phát hành</span>
+                    <span class="text-sm font-bold text-gray-900"><c:out value="${not empty product.edition ? product.edition : 'Bản in gốc'}" /></span>
+                </div>
+                <div class="bg-[#f4f7fe] rounded-lg px-5 py-3.5 flex items-center justify-between border border-[#edf2fd]">
+                    <span class="text-sm text-gray-500 font-medium">Tình trạng ngoại quan</span>
+                    <span class="text-sm font-bold text-[#4a4bf1]">
+                        <c:choose>
+                            <c:when test="${product.item_condition == 'NEW'}">Mới 100% (Nguyên Seal)</c:when>
+                            <c:when test="${product.item_condition == 'LIKE_NEW'}">Like New 95% (Sưu tầm)</c:when>
+                            <c:otherwise>Đã qua sử dụng (Còn tốt)</c:otherwise>
+                        </c:choose>
+                    </span>
+                </div>
+                <div class="bg-[#f4f7fe] rounded-lg px-5 py-3.5 flex items-center justify-between border border-[#edf2fd]">
+                    <span class="text-sm text-gray-500 font-medium">Ngôn ngữ ấn bản</span>
+                    <span class="text-sm font-bold text-gray-900"><c:out value="${not empty product.language ? product.language : 'Tiếng Việt'}" /></span>
+                </div>
+                <div class="bg-[#f4f7fe] rounded-lg px-5 py-3.5 flex items-center justify-between border border-[#edf2fd]">
+                    <span class="text-sm text-gray-500 font-medium">Số lượng sẵn có</span>
+                    <span class="text-sm font-bold text-gray-900">${currentStock} cuốn</span>
+                </div>
+                <div class="bg-[#f4f7fe] rounded-lg px-5 py-3.5 flex items-center justify-between border border-[#edf2fd]">
+                    <span class="text-sm text-gray-500 font-medium">Mã định danh hệ thống</span>
+                    <span class="text-sm font-bold text-gray-900">#MG-00<c:out value="${product.id}" default="01" /></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: GHI CHÚ MÔ TẢ -->
+        <div id="tab-desc" class="tab-panel mt-4 hidden">
+            <div class="bg-[#f4f7fe] rounded-xl p-6 border border-[#edf2fd]">
+                <h3 class="text-sm font-bold text-gray-900 mb-2">Tóm tắt & Chi tiết ấn phẩm từ người bán:</h3>
+                <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
+                    <c:out value="${product.description}" default="Người bán chưa cung cấp thêm ghi chú mô tả cho ấn phẩm này." />
+                </p>
+            </div>
+        </div>
+
+        <!-- TAB 3: HỎI ĐÁP BÌNH LUẬN -->
+        <div id="tab-comments" class="tab-panel mt-4 hidden">
+            <div class="bg-white rounded-xl p-6 border border-gray-200">
+                <form action="${pageContext.request.contextPath}/comment" method="post" class="mb-6">
+                    <input type="hidden" name="productId" value="${product.id}">
+                    <textarea name="content" rows="3" required placeholder="Đặt câu hỏi công khai cho người bán về tình trạng cuốn sách này..."
+                              class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:outline-indigo-600"></textarea>
+                    <div class="flex justify-end mt-2">
+                        <button type="submit" class="bg-indigo-600 text-white font-bold px-4 py-2 rounded-lg text-xs hover:bg-indigo-700 transition">
+                            Gửi câu hỏi
+                        </button>
+                    </div>
+                </form>
+
+                <c:choose>
+                    <c:when test="${not empty comments}">
+                        <div class="space-y-3">
+                            <c:forEach var="c" items="${comments}">
+                                <div class="p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="font-bold text-xs text-gray-900"><c:out value="${c.userName}" default="Collector" /></span>
+                                        <span class="text-[11px] text-gray-400"><fmt:formatDate value="${c.createdAt}" pattern="dd/MM/yyyy HH:mm" /></span>
+                                    </div>
+                                    <p class="text-xs text-gray-700"><c:out value="${c.content}" /></p>
+                                </div>
+                            </c:forEach>
+                        </div>
+                    </c:when>
+                    <c:otherwise>
+                        <p class="text-xs text-gray-400 italic text-center py-4">Chưa có câu hỏi nào. Hãy là người đầu tiên thảo luận về cuốn manga này!</p>
+                    </c:otherwise>
+                </c:choose>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%@ include file="includes/footer.jsp" %>
+
+<!-- SCRIPT CHUYỂN TAB VÀ ĐIỀU CHỈNH SỐ LƯỢNG -->
+<script>
+    function adjustQty(amount) {
+        const input = document.getElementById('quantity');
+        if (!input) return;
+        let val = parseInt(input.value) || 1;
+        const max = parseInt(input.getAttribute('max')) || 99;
+        val += amount;
+        if (val < 1) val = 1;
+        if (val > max) val = max;
+        input.value = val;
+    }
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-panel').forEach(panel => {
+            panel.classList.add('hidden');
+        });
+        const target = document.getElementById(tabId);
+        if (target) target.classList.remove('hidden');
+
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.className = 'tab-btn px-6 py-3 rounded-lg font-bold text-sm flex items-center gap-2 bg-[#f0f3fd] text-gray-600 hover:bg-gray-200 transition';
+        });
+        const activeBtn = document.getElementById('btn-' + tabId);
+        if (activeBtn) {
+            activeBtn.className = 'tab-btn px-6 py-3 rounded-lg font-bold text-sm flex items-center gap-2 bg-[#4a4bf1] text-white shadow-sm transition';
+        }
+    }
+</script>
+
 </body>
 </html>

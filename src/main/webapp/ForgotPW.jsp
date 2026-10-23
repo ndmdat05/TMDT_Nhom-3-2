@@ -13,7 +13,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="Css/Login.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/Login.css">
 </head>
 <body>
 <div class="mangaz-wrapper">
@@ -28,10 +28,7 @@
                 <h2 class="form-title">Quên mật khẩu?</h2>
                 <p class="form-subtitle">Nhập email của bạn để nhận liên kết đặt lại mật khẩu.</p>
 
-                <c:if test="${not empty message || not empty sessionScope.message}">
-                    <p style="color: #10b981; font-weight: 600; margin-bottom: 15px;">${not empty message ? message : sessionScope.message}</p>
-                    <c:remove var="message" scope="session"/>
-                </c:if>
+
 
                 <c:if test="${not empty errorMessage || not empty sessionScope.errorMessage}">
                     <p style="color: #ef4444; font-weight: 600; margin-bottom: 15px;">${not empty errorMessage ? errorMessage : sessionScope.errorMessage}</p>
@@ -42,13 +39,13 @@
                     <div class="input-group">
                         <label for="input-email">EMAIL ĐÃ ĐĂNG KÝ</label>
                         <div class="input-wrapper">
-                            <img src="Image/@.svg" alt="@" class="icon-left">
+                            <img src="${pageContext.request.contextPath}/Image/@.svg" alt="@" class="icon-left">
                             <input type="email" id="input-email" name="email" placeholder="otaku@mangaz.vn" required>
                         </div>
                     </div>
 
                     <button type="submit" class="btn-primary">
-                        Gửi liên kết khôi phục <img src="Image/turnRight.svg" alt="->" class="arrow-icon">
+                        Gửi liên kết khôi phục <img src="${pageContext.request.contextPath}/Image/turnRight.svg" alt="->" class="arrow-icon">
                     </button>
                 </form>
 

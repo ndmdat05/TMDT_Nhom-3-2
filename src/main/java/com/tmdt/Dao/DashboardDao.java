@@ -42,6 +42,11 @@ public class DashboardDao extends BaseDao {
                 return "";
         }
     }
+    // 4. Đếm tổng số giao dịch theo bộ lọc trạng thái (phục vụ phân trang)
+    public long countTransactions(String statusFilter) {
+        try {
+            boolean hasStatus = (statusFilter != null && !statusFilter.isBlank());
+            String sql = "SELECT COUNT(*) FROM orders " + (hasStatus ? "WHERE order_status = :status" : "");
 
     // 1. KPI tổng quan
     public DashboardStats getStats(LocalDate from, LocalDate to) {

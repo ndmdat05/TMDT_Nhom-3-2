@@ -14,10 +14,13 @@ public class User {
     boolean is_verified;
     String hash_password;
     private String auth_provider;
+    private String phone_number;
+    private String address;
+    private String avatar_url;
 
     public User() {}
 
-    public User(String full_name, String username, String email,String hash_password, String role,boolean is_verified ,String verify_token,String auth_provider,String status) {
+    public User(String full_name, String username, String email,String hash_password, String role,boolean is_verified ,String verify_token,String auth_provider,String phone_number,String address,String status) {
         this.id = id;
         this.full_name = full_name;
         this.username = username;
@@ -28,6 +31,22 @@ public class User {
         this.hash_password = hash_password;
         this.status = status;
         this.auth_provider = auth_provider;
+        this.phone_number = phone_number;
+        this.address = address;
+    }
+    public User(int id,String full_name, String username, String email,String hash_password, String role,boolean is_verified ,String verify_token,String auth_provider,String phone_number,String address,String avatar_url,String status) {
+        this.id = id;
+        this.full_name = full_name;
+        this.username = username;
+        this.email = email;
+        this.role = role;
+        this.verify_token = verify_token;
+        this.is_verified = is_verified;
+        this.hash_password = hash_password;
+        this.status = status;
+        this.auth_provider = auth_provider;
+        this.phone_number = phone_number;
+        this.address = address;
     }
 
     public int getId() { return id; }
@@ -87,5 +106,32 @@ public class User {
 
     public void setAuth_provider(String auth_provider) {
         this.auth_provider = auth_provider;
+    }
+    public boolean getIs_verified() {
+        return is_verified;
+    }
+
+    public String getPhone_number() {
+        return phone_number;
+    }
+
+    public void setPhone_number(String phone_number) {
+        this.phone_number = phone_number;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public String getAvatar_url() {
+        return avatar_url;
+    }
+
+    public void setAvatar_url(String avatar_url) {
+        this.avatar_url = avatar_url;
     }
 }
