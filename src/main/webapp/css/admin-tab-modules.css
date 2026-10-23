@@ -1,0 +1,14 @@
+/* Chỉ còn phần popup "Lý do xử lý" (admin-modules.js bật/tắt bằng class .show).
+   Mọi thứ khác của 3 tab con đã dùng Tailwind giống tab Người dùng/Sản phẩm/Đơn hàng. */
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, .38);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+.modal.show {
+    display: flex;
+}
