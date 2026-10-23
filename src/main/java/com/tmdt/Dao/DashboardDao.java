@@ -1,101 +1,117 @@
 package com.tmdt.Dao;
 
-import com.tmdt.Model.OrderTracking;
-import com.tmdt.Model.PurchaseOrder;
-import com.tmdt.Model.TrackingStep;
+import com.tmdt.Model.DashboardCategoryShare;
+import com.tmdt.Model.DashboardChartPoint;
+import com.tmdt.Model.DashboardStats;
+import com.tmdt.Model.DashboardTransaction;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PurchaseHistoryDao extends BaseDao {
+public class DashboardDao extends BaseDao {
 
-    private static final String SQL_ORDERS_BY_USER = 
-            "SELECT v.order_code AS orderCode, v.order_date AS orderDate, v.total_amount AS totalAmount, " +
-            "       v.status_code AS statusCode, v.status_label AS statusLabel " +
-            "FROM ( " +
-            "  SELECT o.id, o.order_code, DATE(o.created_at) AS order_date, o.created_at, o.total_amount, " +
-            "         CASE WHEN o.order_status = 'COMPLETED' THEN 'done' " +
-            "              WHEN o.order_status = 'CANCELLED' THEN 'cancel' " +
-            "              WHEN o.order_status IN ('CONFIRMED','SHIPPING') THEN 'ship' " +
-            "              ELSE 'pay' END AS status_code, " +
-            "         CASE WHEN o.order_status = 'COMPLETED' THEN 'Hoàn tất' " +
-            "              WHEN o.order_status = 'CANCELLED' THEN 'Đã hủy' " +
-            "              WHEN o.order_status = 'SHIPPING' THEN 'Đang vận chuyển' " +
-            "              WHEN o.order_status = 'CONFIRMED' THEN 'Chuẩn bị hàng' " +
-            "              WHEN o.payment_method = 'ONLINE' AND o.payment_status = 'PENDING' THEN 'Chờ thanh toán' " +
-            "              WHEN o.payment_method = 'ONLINE' AND o.payment_status = 'FAILED' THEN 'Thanh toán thất bại' " +
-            "              ELSE 'Chờ xác nhận' END AS status_label " +
-            "  FROM orders o " +
-            "  WHERE (o.buyer_id = :userId OR EXISTS (SELECT 1 FROM users a WHERE a.id = :userId AND a.role = 'ADMIN' AND a.status = 'ACTIVE')) " +
-            "    AND (:keyword = '' OR INSTR(o.order_code, :keyword) > 0) " +
-            ") v " +
-            "WHERE (:status = '' OR v.status_code = :status) " +
-            "ORDER BY v.created_at DESC, v.id DESC";
+    // 1. Thống kê tổng quan (doanh thu, đơn hàng, khách hàng)
+    public DashboardStats getStats(LocalDate from, LocalDate to) {
+        try {
+            String sql = "SELECT " +
+                    "  COALESCE(SUM(CASE WHEN order_status = 'COMPLETED' THEN total_amount ELSE 0 END), 0) AS totalRevenue, " +
+                    "  COUNT(id) AS totalOrders, " +
+                    "  COUNT(DISTINCT buyer_id) AS totalCustomers " +
+                    "FROM orders " +
+                    "WHERE DATE(created_at) BETWEEN :from AND :to";
 
-
-    private static final String SQL_LATEST_SHIPPING_ORDER = 
-            "SELECT o.order_code AS orderCode, o.estimated_delivery AS estimatedDelivery, " +
-            "       o.shipping_address AS shippingAddress, " +
-            "       (SELECT COUNT(*) FROM order_trackings t WHERE t.order_id = o.id) AS currentStep " +
-            "FROM orders o " +
-            "WHERE (o.buyer_id = :userId OR EXISTS (SELECT 1 FROM users a WHERE a.id = :userId AND a.role = 'ADMIN' AND a.status = 'ACTIVE')) " +
-            "  AND o.order_status = 'SHIPPING' " +
-            "ORDER BY o.updated_at DESC, o.id DESC " +
-            "LIMIT 1";
-
-    private static final String SQL_TRACKING_STEPS = 
-            "SELECT s.label AS label, s.time_text AS timeText FROM ( " +
-            "  SELECT 0 AS grp, o.created_at AS ts, 0 AS sid, 'Đặt hàng thành công' AS label, " +
-            "         DATE_FORMAT(o.created_at, '%d/%m • %H:%i') AS time_text " +
-            "  FROM orders o WHERE o.order_code = :orderCode AND (o.buyer_id = :userId OR EXISTS (SELECT 1 FROM users a WHERE a.id = :userId AND a.role = 'ADMIN' AND a.status = 'ACTIVE')) " +
-            "  UNION ALL " +
-            "  SELECT 1, t.created_at, t.id, t.step_status, DATE_FORMAT(t.created_at, '%d/%m • %H:%i') " +
-            "  FROM order_trackings t JOIN orders o ON o.id = t.order_id " +
-            "  WHERE o.order_code = :orderCode AND (o.buyer_id = :userId OR EXISTS (SELECT 1 FROM users a WHERE a.id = :userId AND a.role = 'ADMIN' AND a.status = 'ACTIVE')) " +
-            "  UNION ALL " +
-
-                    "  SELECT 2, o.estimated_delivery, 0, 'Dự kiến giao hàng', " +
-                    "         IF(o.estimated_delivery IS NULL, 'Chưa có ngày dự kiến', CONCAT('Dự kiến ', DATE_FORMAT(o.estimated_delivery, '%d/%m'))) " +
-                    "  FROM orders o WHERE o.order_code = :orderCode AND (o.buyer_id = :userId OR EXISTS (SELECT 1 FROM users a WHERE a.id = :userId AND a.role = 'ADMIN' AND a.status = 'ACTIVE')) AND o.order_status = 'SHIPPING' " +
-                    ") s ORDER BY s.grp, s.ts, s.sid";
-
-    private static boolean notConfigured(String sql) {
-        return sql == null || sql.isBlank();
+            return get().withHandle(h -> h.createQuery(sql)
+                    .bind("from", from)
+                    .bind("to", to)
+                    .mapToBean(DashboardStats.class)
+                    .findOne()
+                    .orElseGet(DashboardStats::new));
+        } catch (Exception e) {
+            return new DashboardStats();
+        }
     }
 
-    public List<PurchaseOrder> findOrdersByUser(int userId, String keyword, String status) {
-        if (notConfigured(SQL_ORDERS_BY_USER)) {
+    // 2. Điểm vẽ biểu đồ theo ngày
+    public List<DashboardChartPoint> getEscrowValueByDay(LocalDate from, LocalDate to) {
+        try {
+            String sql = "SELECT DATE(created_at) AS dateLabel, " +
+                    "COALESCE(SUM(total_amount), 0) AS value " +
+                    "FROM orders " +
+                    "WHERE DATE(created_at) BETWEEN :from AND :to " +
+                    "GROUP BY DATE(created_at) " +
+                    "ORDER BY DATE(created_at) ASC";
+
+            return get().withHandle(h -> h.createQuery(sql)
+                    .bind("from", from)
+                    .bind("to", to)
+                    .mapToBean(DashboardChartPoint.class)
+                    .list());
+        } catch (Exception e) {
             return new ArrayList<>();
         }
-        return get().withHandle(h -> h.createQuery(SQL_ORDERS_BY_USER)
-                .bind("userId", userId)
-                .bind("keyword", keyword)
-                .bind("status", status)
-                .mapToBean(PurchaseOrder.class)
-                .list());
     }
 
+    // 3. Tỷ lệ cơ cấu danh mục
+    public List<DashboardCategoryShare> getCategoryShares(LocalDate from, LocalDate to) {
+        try {
+            String sql = "SELECT c.name AS categoryName, COALESCE(SUM(oi.price * oi.quantity), 0) AS value " +
+                    "FROM order_items oi " +
+                    "JOIN products p ON oi.product_id = p.id " +
+                    "JOIN categories c ON p.category_id = c.id " +
+                    "JOIN orders o ON oi.order_id = o.id " +
+                    "WHERE DATE(o.created_at) BETWEEN :from AND :to " +
+                    "GROUP BY c.id, c.name";
 
-    public OrderTracking findLatestShippingOrder(int userId) {
-        if (notConfigured(SQL_LATEST_SHIPPING_ORDER)) {
-            return null;
-        }
-        return get().withHandle(h -> h.createQuery(SQL_LATEST_SHIPPING_ORDER)
-                .bind("userId", userId)
-                .mapToBean(OrderTracking.class)
-                .findOne()
-                .orElse(null));
-    }
-
-
-    public List<TrackingStep> findTrackingSteps(int userId, String orderCode) {
-        if (notConfigured(SQL_TRACKING_STEPS)) {
+            return get().withHandle(h -> h.createQuery(sql)
+                    .bind("from", from)
+                    .bind("to", to)
+                    .mapToBean(DashboardCategoryShare.class)
+                    .list());
+        } catch (Exception e) {
             return new ArrayList<>();
         }
-        return get().withHandle(h -> h.createQuery(SQL_TRACKING_STEPS)
-                .bind("userId", userId)
-                .bind("orderCode", orderCode)
-                .mapToBean(TrackingStep.class)
-                .list());
+    }
+    // 4. Đếm tổng số giao dịch theo bộ lọc trạng thái (phục vụ phân trang)
+    public long countTransactions(String statusFilter) {
+        try {
+            boolean hasStatus = (statusFilter != null && !statusFilter.isBlank());
+            String sql = "SELECT COUNT(*) FROM orders " + (hasStatus ? "WHERE order_status = :status" : "");
+
+            return get().withHandle(h -> {
+                var query = h.createQuery(sql);
+                if (hasStatus) {
+                    query.bind("status", statusFilter);
+                }
+                return query.mapTo(Long.class).one();
+            });
+        } catch (Exception e) {
+            return 0L;
+        }
+    }
+
+    // 5. Lấy danh sách giao dịch có phân trang
+    public List<DashboardTransaction> getRecentTransactions(String statusFilter, int limit, int offset) {
+        try {
+            boolean hasStatus = (statusFilter != null && !statusFilter.isBlank());
+            String sql = "SELECT id, order_code AS orderCode, total_amount AS amount, " +
+                    "order_status AS status, created_at AS createdAt " +
+                    "FROM orders " +
+                    (hasStatus ? "WHERE order_status = :status " : " ") +
+                    "ORDER BY created_at DESC " +
+                    "LIMIT :limit OFFSET :offset";
+
+            return get().withHandle(h -> {
+                var query = h.createQuery(sql)
+                        .bind("limit", limit)
+                        .bind("offset", offset);
+                if (hasStatus) {
+                    query.bind("status", statusFilter);
+                }
+                return query.mapToBean(DashboardTransaction.class).list();
+            });
+        } catch (Exception e) {
+            return new ArrayList<>();
+        }
     }
 }
