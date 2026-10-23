@@ -48,11 +48,13 @@ public class ProfileController extends HttpServlet {
         String fullName = request.getParameter("full_name");
         String phoneNumber = request.getParameter("phone_number");
         String address = request.getParameter("address");
+        String avatarUrl = request.getParameter("avatar_url");
 
 
         loginUser.setFull_name(fullName);
         loginUser.setPhone_number(phoneNumber);
         loginUser.setAddress(address);
+        loginUser.setAvatar_url(avatarUrl);
 
        UserService userService = new UserService();
         boolean success = userService.updateProfile(loginUser);

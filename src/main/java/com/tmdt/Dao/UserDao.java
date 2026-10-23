@@ -200,7 +200,7 @@ public class UserDao extends BaseDao {
     }
 
     public boolean updateProfile(User user) {
-        String sql = "UPDATE users SET full_name = :full_name, phone_number = :phone_number, address = :address WHERE id = :id";
+        String sql = "UPDATE users SET full_name = :full_name, phone_number = :phone_number, address = :address, avatar_url = :avatar_url WHERE id = :id";
         return get().withHandle(h -> {
            return h.createUpdate(sql)
                     .bindBean(user)
