@@ -1,132 +1,101 @@
 package com.tmdt.Dao;
 
-import com.tmdt.Model.DashboardCategoryShare;
-import com.tmdt.Model.DashboardChartPoint;
-import com.tmdt.Model.DashboardStats;
-import com.tmdt.Model.DashboardTransaction;
+import com.tmdt.Model.OrderTracking;
+import com.tmdt.Model.PurchaseOrder;
+import com.tmdt.Model.TrackingStep;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * DAO cho Dashboard (Admin). Viết theo mẫu UserDao: extends BaseDao + JDBI ({@code get().withHandle(...)}).
- *
- * ============================ KHUNG CẦN HOÀN THIỆN ============================
- * Hiện CHƯA có database cho Dashboard nên các hằng SQL_* bên dưới để TRỐNG.
- * Khi SQL trống, method trả về kết quả rỗng (KHÔNG có dữ liệu giả) và giao diện hiển thị trạng thái trống.
- *
- * Khi có database, bạn chỉ cần:
- *   1. Điền câu SQL vào các hằng SQL_*  (tên bảng, tên cột, JOIN, điều kiện...).
- *   2. Đặt ALIAS cột trong SELECT đúng bằng tên thuộc tính của DTO (xem "Cột trả về") -
- *      JDBI mapToBean sẽ tự ánh xạ, không cần sửa code Java bên dưới.
- *   3. Với trạng thái giao dịch: SQL phải trả cột statusCode thuộc {released, holding, reviewing, dispute}
- *      và statusLabel (chữ hiển thị) - có thể dùng CASE WHEN để quy đổi từ giá trị trong DB.
- * ==============================================================================
- */
-public class DashboardDao extends BaseDao {
+public class PurchaseHistoryDao extends BaseDao {
 
-    // ---------------------------------------------------------------------
-    // TODO(DB) 1/5 - Thẻ KPI. Tham số: :from, :to (DATE).
-    // Cột trả về (1 dòng) -> DashboardStats:
-    //   totalEscrowValue, escrowChangePercent, successfulOrders, successRatePercent,
-    //   pendingAppraisals, activeCollectors, newCollectorsToday, disputeCount
-    // Cột nào chưa tính được thì có thể bỏ khỏi SELECT (giá trị sẽ là null -> UI hiện "Chưa có dữ liệu").
-    // ---------------------------------------------------------------------
-    private static final String SQL_STATS = "";
+    private static final String SQL_ORDERS_BY_USER = 
+            "SELECT v.order_code AS orderCode, v.order_date AS orderDate, v.total_amount AS totalAmount, " +
+            "       v.status_code AS statusCode, v.status_label AS statusLabel " +
+            "FROM ( " +
+            "  SELECT o.id, o.order_code, DATE(o.created_at) AS order_date, o.created_at, o.total_amount, " +
+            "         CASE WHEN o.order_status = 'COMPLETED' THEN 'done' " +
+            "              WHEN o.order_status = 'CANCELLED' THEN 'cancel' " +
+            "              WHEN o.order_status IN ('CONFIRMED','SHIPPING') THEN 'ship' " +
+            "              ELSE 'pay' END AS status_code, " +
+            "         CASE WHEN o.order_status = 'COMPLETED' THEN 'Hoàn tất' " +
+            "              WHEN o.order_status = 'CANCELLED' THEN 'Đã hủy' " +
+            "              WHEN o.order_status = 'SHIPPING' THEN 'Đang vận chuyển' " +
+            "              WHEN o.order_status = 'CONFIRMED' THEN 'Chuẩn bị hàng' " +
+            "              WHEN o.payment_method = 'ONLINE' AND o.payment_status = 'PENDING' THEN 'Chờ thanh toán' " +
+            "              WHEN o.payment_method = 'ONLINE' AND o.payment_status = 'FAILED' THEN 'Thanh toán thất bại' " +
+            "              ELSE 'Chờ xác nhận' END AS status_label " +
+            "  FROM orders o " +
+            "  WHERE (o.buyer_id = :userId OR EXISTS (SELECT 1 FROM users a WHERE a.id = :userId AND a.role = 'ADMIN' AND a.status = 'ACTIVE')) " +
+            "    AND (:keyword = '' OR INSTR(o.order_code, :keyword) > 0) " +
+            ") v " +
+            "WHERE (:status = '' OR v.status_code = :status) " +
+            "ORDER BY v.created_at DESC, v.id DESC";
 
-    // ---------------------------------------------------------------------
-    // TODO(DB) 2/5 - Biểu đồ cột: giá trị ký quỹ theo NGÀY. Tham số: :from, :to.
-    // Cột trả về (nhiều dòng) -> DashboardChartPoint: day (DATE), value (số tiền).
-    // Nên ORDER BY day ASC. Ngày không có giao dịch có thể bỏ qua.
-    // ---------------------------------------------------------------------
-    private static final String SQL_ESCROW_BY_DAY = "";
 
-    // ---------------------------------------------------------------------
-    // TODO(DB) 3/5 - Biểu đồ tròn: giá trị theo DANH MỤC. Tham số: :from, :to.
-    // Cột trả về (nhiều dòng) -> DashboardCategoryShare: name, value.
-    // (percent KHÔNG cần trả về, DashboardService tự tính.)
-    // ---------------------------------------------------------------------
-    private static final String SQL_CATEGORY_SHARE = "";
+    private static final String SQL_LATEST_SHIPPING_ORDER = 
+            "SELECT o.order_code AS orderCode, o.estimated_delivery AS estimatedDelivery, " +
+            "       o.shipping_address AS shippingAddress, " +
+            "       (SELECT COUNT(*) FROM order_trackings t WHERE t.order_id = o.id) AS currentStep " +
+            "FROM orders o " +
+            "WHERE (o.buyer_id = :userId OR EXISTS (SELECT 1 FROM users a WHERE a.id = :userId AND a.role = 'ADMIN' AND a.status = 'ACTIVE')) " +
+            "  AND o.order_status = 'SHIPPING' " +
+            "ORDER BY o.updated_at DESC, o.id DESC " +
+            "LIMIT 1";
 
-    // ---------------------------------------------------------------------
-    // TODO(DB) 4/5 - Bảng giao dịch gần nhất (phân trang + lọc trạng thái).
-    // Tham số: :status (rỗng = tất cả; nếu khác rỗng hãy lọc theo statusCode đã quy đổi),
-    //          :limit, :offset.
-    // Cột trả về -> DashboardTransaction: escrowCode, title, subtitle, buyer, seller,
-    //          amount, statusCode, statusLabel.  ORDER BY thời điểm giao dịch DESC.
-    // ---------------------------------------------------------------------
-    private static final String SQL_RECENT_TRANSACTIONS = "";
+    private static final String SQL_TRACKING_STEPS = 
+            "SELECT s.label AS label, s.time_text AS timeText FROM ( " +
+            "  SELECT 0 AS grp, o.created_at AS ts, 0 AS sid, 'Đặt hàng thành công' AS label, " +
+            "         DATE_FORMAT(o.created_at, '%d/%m • %H:%i') AS time_text " +
+            "  FROM orders o WHERE o.order_code = :orderCode AND (o.buyer_id = :userId OR EXISTS (SELECT 1 FROM users a WHERE a.id = :userId AND a.role = 'ADMIN' AND a.status = 'ACTIVE')) " +
+            "  UNION ALL " +
+            "  SELECT 1, t.created_at, t.id, t.step_status, DATE_FORMAT(t.created_at, '%d/%m • %H:%i') " +
+            "  FROM order_trackings t JOIN orders o ON o.id = t.order_id " +
+            "  WHERE o.order_code = :orderCode AND (o.buyer_id = :userId OR EXISTS (SELECT 1 FROM users a WHERE a.id = :userId AND a.role = 'ADMIN' AND a.status = 'ACTIVE')) " +
+            "  UNION ALL " +
 
-    // ---------------------------------------------------------------------
-    // TODO(DB) 5/5 - Đếm tổng số giao dịch (cùng điều kiện lọc với SQL_RECENT_TRANSACTIONS).
-    // Tham số: :status. Trả về 1 số nguyên.
-    // ---------------------------------------------------------------------
-    private static final String SQL_COUNT_TRANSACTIONS = "";
+                    "  SELECT 2, o.estimated_delivery, 0, 'Dự kiến giao hàng', " +
+                    "         IF(o.estimated_delivery IS NULL, 'Chưa có ngày dự kiến', CONCAT('Dự kiến ', DATE_FORMAT(o.estimated_delivery, '%d/%m'))) " +
+                    "  FROM orders o WHERE o.order_code = :orderCode AND (o.buyer_id = :userId OR EXISTS (SELECT 1 FROM users a WHERE a.id = :userId AND a.role = 'ADMIN' AND a.status = 'ACTIVE')) AND o.order_status = 'SHIPPING' " +
+                    ") s ORDER BY s.grp, s.ts, s.sid";
 
     private static boolean notConfigured(String sql) {
         return sql == null || sql.isBlank();
     }
 
-    /** Số liệu KPI trong khoảng [from, to]. Chưa cấu hình SQL -> DashboardStats rỗng (toàn null). */
-    public DashboardStats getStats(LocalDate from, LocalDate to) {
-        if (notConfigured(SQL_STATS)) {
-            return new DashboardStats();
-        }
-        return get().withHandle(h -> h.createQuery(SQL_STATS)
-                .bind("from", from)
-                .bind("to", to)
-                .mapToBean(DashboardStats.class)
-                .findOne()
-                .orElse(new DashboardStats()));
-    }
-
-    /** Giá trị ký quỹ theo ngày trong khoảng [from, to]. */
-    public List<DashboardChartPoint> getEscrowValueByDay(LocalDate from, LocalDate to) {
-        if (notConfigured(SQL_ESCROW_BY_DAY)) {
+    public List<PurchaseOrder> findOrdersByUser(int userId, String keyword, String status) {
+        if (notConfigured(SQL_ORDERS_BY_USER)) {
             return new ArrayList<>();
         }
-        return get().withHandle(h -> h.createQuery(SQL_ESCROW_BY_DAY)
-                .bind("from", from)
-                .bind("to", to)
-                .mapToBean(DashboardChartPoint.class)
-                .list());
-    }
-
-    /** Giá trị theo danh mục trong khoảng [from, to]. */
-    public List<DashboardCategoryShare> getCategoryShares(LocalDate from, LocalDate to) {
-        if (notConfigured(SQL_CATEGORY_SHARE)) {
-            return new ArrayList<>();
-        }
-        return get().withHandle(h -> h.createQuery(SQL_CATEGORY_SHARE)
-                .bind("from", from)
-                .bind("to", to)
-                .mapToBean(DashboardCategoryShare.class)
-                .list());
-    }
-
-    /** Giao dịch gần nhất, có phân trang. status rỗng = tất cả. */
-    public List<DashboardTransaction> getRecentTransactions(String status, int limit, int offset) {
-        if (notConfigured(SQL_RECENT_TRANSACTIONS)) {
-            return new ArrayList<>();
-        }
-        return get().withHandle(h -> h.createQuery(SQL_RECENT_TRANSACTIONS)
+        return get().withHandle(h -> h.createQuery(SQL_ORDERS_BY_USER)
+                .bind("userId", userId)
+                .bind("keyword", keyword)
                 .bind("status", status)
-                .bind("limit", limit)
-                .bind("offset", offset)
-                .mapToBean(DashboardTransaction.class)
+                .mapToBean(PurchaseOrder.class)
                 .list());
     }
 
-    /** Tổng số giao dịch theo bộ lọc trạng thái (để tính số trang). */
-    public long countTransactions(String status) {
-        if (notConfigured(SQL_COUNT_TRANSACTIONS)) {
-            return 0L;
+
+    public OrderTracking findLatestShippingOrder(int userId) {
+        if (notConfigured(SQL_LATEST_SHIPPING_ORDER)) {
+            return null;
         }
-        return get().withHandle(h -> h.createQuery(SQL_COUNT_TRANSACTIONS)
-                .bind("status", status)
-                .mapTo(Long.class)
+        return get().withHandle(h -> h.createQuery(SQL_LATEST_SHIPPING_ORDER)
+                .bind("userId", userId)
+                .mapToBean(OrderTracking.class)
                 .findOne()
-                .orElse(0L));
+                .orElse(null));
+    }
+
+
+    public List<TrackingStep> findTrackingSteps(int userId, String orderCode) {
+        if (notConfigured(SQL_TRACKING_STEPS)) {
+            return new ArrayList<>();
+        }
+        return get().withHandle(h -> h.createQuery(SQL_TRACKING_STEPS)
+                .bind("userId", userId)
+                .bind("orderCode", orderCode)
+                .mapToBean(TrackingStep.class)
+                .list());
     }
 }

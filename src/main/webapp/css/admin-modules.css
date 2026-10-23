@@ -1,0 +1,395 @@
+body {
+    margin: 0;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    background: #f8f7fb;
+    color: #1f2937;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+button, input, textarea {
+    font: inherit;
+}
+
+.admin-shell {
+    display: flex;
+    min-height: 100vh;
+}
+
+.sidebar {
+    width: 270px;
+    background: #f5f6f8;
+    border-right: 1px solid #e5e7eb;
+    padding: 20px 14px;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px 20px;
+}
+
+.brand-mark {
+    width: 32px;
+    height: 32px;
+    background: #e7d8f6;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: #4f46e5;
+}
+
+.brand-name {
+    font-weight: 700;
+    font-size: 1.02rem;
+}
+
+.brand-role {
+    font-size: 0.76rem;
+    color: #6b7280;
+}
+
+.menu-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.menu-heading {
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #6b7280;
+    padding: 10px 12px 6px;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    text-decoration: none;
+    color: #374151;
+    font-weight: 600;
+}
+
+.nav-item:hover,
+.nav-item.active {
+    background: #e6edf7;
+    color: #1d4ed8;
+}
+
+.sidebar-footer {
+    margin-top: auto;
+    padding: 12px 6px 0;
+}
+
+.logout-btn,
+.ghost-btn,
+.primary-btn,
+.mini-btn {
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.logout-btn {
+    width: 100%;
+    padding: 10px 12px;
+    background: #edf2ff;
+    color: #374151;
+    font-weight: 600;
+}
+
+.main-panel {
+    flex: 1;
+    padding: 24px;
+}
+
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    background: transparent;
+    padding: 0 0 18px;
+}
+
+.search-box {
+    width: min(420px, 62%);
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: #6b7280;
+}
+
+.toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ghost-btn {
+    background: #e5e7eb;
+    color: #1f2937;
+    padding: 10px 14px;
+    font-weight: 600;
+}
+
+.primary-btn {
+    background: linear-gradient(135deg, #2bb673, #16a34a);
+    color: white;
+    padding: 10px 16px;
+    font-weight: 700;
+}
+
+.page-title-box {
+    background: transparent;
+    padding: 8px 0 18px;
+}
+
+.title-label {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    color: #7c8aa3;
+    letter-spacing: 0.08em;
+}
+
+.page-title-box h1 {
+    margin: 8px 0 6px;
+    font-size: clamp(1.8rem, 2vw, 2.6rem);
+}
+
+.page-title-box p {
+    margin: 0;
+    color: #6b7280;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(180px, 1fr));
+    gap: 14px;
+    margin: 18px 0 22px;
+}
+
+.stat-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 18px 18px 14px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}
+
+.stat-label {
+    display: block;
+    color: #6b7280;
+    font-size: 0.8rem;
+    margin-bottom: 12px;
+}
+
+.stat-card strong {
+    font-size: 2rem;
+    display: block;
+}
+
+.table-panel {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 18px;
+    overflow: hidden;
+}
+
+.table-header-row {
+    background: #f4f5f7;
+    padding: 14px 18px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.tab-group {
+    display: flex;
+    gap: 8px;
+}
+
+.tab-btn {
+    border: 1px solid #d1d5db;
+    background: #fff;
+    color: #374151;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.tab-btn.active {
+    background: #e0ecff;
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 14px 18px;
+    border-bottom: 1px solid #eef2f7;
+    text-align: left;
+    vertical-align: top;
+}
+
+th {
+    background: #f7f8fa;
+    color: #4b5563;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+tbody tr:hover {
+    background: #fafbff;
+}
+
+.content-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.content-cell span {
+    color: #6b7280;
+    font-size: 0.82rem;
+}
+
+.table-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.mini-btn {
+    padding: 8px 10px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.mini-btn.success {
+    background: #dff7ec;
+    color: #166534;
+}
+
+.mini-btn.warn {
+    background: #fff2d9;
+    color: #92400e;
+}
+
+.mini-btn.neutral {
+    background: #eef2ff;
+    color: #4f46e5;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 0.76rem;
+    font-weight: 700;
+}
+
+.badge.pending {
+    background: #fff4d6;
+    color: #9a6700;
+}
+
+.badge.success {
+    background: #dff7ec;
+    color: #166534;
+}
+
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.38);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal.show {
+    display: flex;
+}
+
+.modal-card {
+    width: min(520px, calc(100% - 24px));
+    background: #fff;
+    border-radius: 18px;
+    padding: 18px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.18);
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.close-btn {
+    border: none;
+    background: transparent;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.modal form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.modal textarea {
+    width: 100%;
+    resize: vertical;
+    min-height: 120px;
+    border: 1px solid #d1d5db;
+    border-radius: 12px;
+    padding: 12px 14px;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+@media (max-width: 980px) {
+    .admin-shell {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, minmax(180px, 1fr));
+    }
+}
+button,
+button:hover,
+button:focus {
+    text-decoration: none;
+}

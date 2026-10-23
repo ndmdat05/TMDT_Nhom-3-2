@@ -43,6 +43,13 @@
                class="flex items-center gap-3 px-4 py-3 rounded-lg ${activeTab == 'orders' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'text-gray-600 hover:bg-gray-50'}">
                 <i class="fas fa-shopping-bag w-5 text-center"></i> Quản lý Đơn hàng
             </a>
+
+            <a href="${pageContext.request.contextPath}/admin/content-support"
+               class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50">
+                <i class="fas fa-layer-group w-5 text-center"></i>
+                Quản lý nội dung & hỗ trợ
+            </a>
+
         </nav>
     </aside>
 
