@@ -4,31 +4,14 @@
 <fmt:setLocale value="vi_VN"/>
 <c:set var="ctx" value="${pageContext.request.contextPath}"/>
 <c:set var="stats" value="${dash.stats}"/>
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Trung tâm Quản trị & Thống kê - MangaZ</title>
-    <link rel="stylesheet" href="${ctx}/css/Dashboard.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-</head>
-<body data-page="admin">
+<%-- Fragment: tab Dashboard (bỏ sidebar riêng, dùng sidebar chung của admin-layout) --%>
 <%-- Form rỗng: các ô lọc ngày / trạng thái bên dưới gắn vào form này bằng thuộc tính form="dashForm" --%>
-<form id="dashForm" method="get" action="${ctx}/admin/dashboard"></form>
+<form id="dashForm" method="get" action="${ctx}/admin/manage">
+    <input type="hidden" name="tab" value="dashboard">
+</form>
 
+<div class="tab-dashboard">
 <div class="dash">
-    <aside class="side">
-        <div class="card prof"><span class="av" style="width:32px;height:32px"></span>
-            <div><b>MangaZ Admin</b><small>Admin Portal</small></div>
-        </div>
-        <div class="card mn"><h5>Quản trị hệ thống</h5>
-            <a class="on" href="${ctx}/admin/dashboard">Dashboard Thống kê</a>
-            <a href="${ctx}/admin/manage?tab=users">Quản lý Người dùng</a>
-            <a href="${ctx}/admin/manage?tab=products">Quản lý Sản phẩm</a>
-            <a href="${ctx}/admin/manage?tab=orders">Quản lý Đơn hàng</a>
-        </div>
-    </aside>
     <main>
         <div class="mh">
             <div><h1 style="font-size:19px">Trung tâm Quản trị & Thống kê MangaVault</h1>
@@ -128,7 +111,7 @@
                 <div><b>⚠ Cảnh báo Rủi ro Trung gian: ${stats.disputeCount} trường hợp mâu thuẫn cần xác thực thủ công</b>
                     <p>Hệ thống ghi nhận các giao dịch đang tranh chấp cần can thiệp.</p></div>
                 <div>
-                    <a class="p" href="${ctx}/admin/dashboard?status=dispute">Xem giao dịch tranh chấp</a>
+                    <a class="p" href="${ctx}/admin/manage?tab=dashboard&status=dispute">Xem giao dịch tranh chấp</a>
                 </div>
             </div>
         </c:if>
@@ -180,7 +163,8 @@
             </table>
             <div class="pg"><span>Hiển thị <fmt:formatNumber value="${dash.transactions.size()}" pattern="#,##0"/> trên <fmt:formatNumber value="${dash.totalTransactions}" pattern="#,##0"/> giao dịch gần nhất</span>
                 <c:if test="${dash.totalTransactions > 0}">
-                    <c:url var="pgBase" value="/admin/dashboard">
+                    <c:url var="pgBase" value="/admin/manage">
+                        <c:param name="tab" value="dashboard"/>
                         <c:param name="from" value="${dash.from}"/>
                         <c:param name="to" value="${dash.to}"/>
                         <c:if test="${not empty dash.statusFilter}"><c:param name="status" value="${dash.statusFilter}"/></c:if>
@@ -197,8 +181,6 @@
         </section>
     </main>
 </div>
+</div>
 <%-- Dữ liệu biểu đồ do DashboardServlet tạo từ Service/DAO (rỗng nếu chưa có) --%>
 <script type="application/json" id="dash-data">${chartJson}</script>
-<script src="${ctx}/js/dashboard.js"></script>
-</body>
-</html>
