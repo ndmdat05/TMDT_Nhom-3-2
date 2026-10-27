@@ -1,11 +1,4 @@
-<%--
-  Created by IntelliJ IDEA.
-  User: Admin
-  Date: 10/22/2026
-  Time: 10:32 PM
-  To change this template use File | Settings | File Templates.
---%>
-<%@ page contentType="text/html;charset=UTF-8" language="java" isELIgnored="false" %>
+<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <html>
@@ -52,23 +45,30 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div class="form-group">
-                            <label for="fullName">Tên</label>
-                            <input type="text" id="fullName" name="fullName" required
-                                   value="${not empty sessionScope.user.full_name ? sessionScope.user.full_name : ''}"
-                                   placeholder="Nhập tên" class="form-control-input">
-                        </div>
-                        <div class="form-group">
-                            <label for="phone">SĐT</label>
-                            <input type="tel" id="phone" name="phone" required
-                                   placeholder="Nhập số điện thoại" class="form-control-input">
-                        </div>
+                    <div class="form-group mb-4">
+                        <label for="fullName">Tên</label>
+                        <input type="text" id="fullName" name="fullName" required
+                               value="${not empty sessionScope.user.full_name ? sessionScope.user.full_name : ''}"
+                               placeholder="Nhập tên" class="form-control-input">
+                    </div>
+                    <div class="form-group mb-4">
+                        <label for="email">Email nhận thông báo</label>
+                        <input type="email" id="email" name="email" required
+                               value="${not empty sessionScope.user.email ? sessionScope.user.email : ''}"
+                               placeholder="Nhập địa chỉ email" class="form-control-input">
                     </div>
 
-                    <div class="form-group mb-2">
+                    <div class="form-group mb-4">
+                        <label for="phone">SĐT</label>
+                        <input type="tel" id="phone" name="phone" required
+                               value="${not empty sessionScope.user.phone_number ? sessionScope.user.phone_number : ''}"
+                               placeholder="Nhập số điện thoại" class="form-control-input">
+                    </div>
+
+                    <div class="form-group mb-4">
                         <label for="address">Địa chỉ</label>
                         <input type="text" id="address" name="address" required
+                               value="${not empty sessionScope.user.address ? sessionScope.user.address : ''}"
                                placeholder="Nhập địa chỉ nhận hàng" class="form-control-input">
                     </div>
 
@@ -77,11 +77,14 @@
                         <span>Đặt làm mặc định</span>
                     </label>
                 </div>
+
                 <div class="checkout-step-card">
                     <div class="mb-4">
                         <span class="step-badge">BƯỚC 2</span>
                         <h2 class="step-heading">Phương thức thanh toán</h2>
                     </div>
+
+                    <!-- Tùy chọn COD -->
                     <label class="payment-option-card active" id="opt-cod" onclick="selectPayment('COD')">
                         <input type="radio" name="paymentMethod" value="COD" checked>
                         <div class="payment-icon-box">
@@ -96,6 +99,7 @@
                         </div>
                     </label>
 
+                    <!-- Tùy chọn ONLINE -->
                     <label class="payment-option-card" id="opt-online" onclick="selectPayment('ONLINE')">
                         <input type="radio" name="paymentMethod" value="ONLINE">
                         <div class="payment-icon-box">
@@ -106,7 +110,7 @@
                                 <span>Thanh toán trực tuyến / Cổng thanh toán</span>
                                 <span class="badge-selected hidden" id="badge-online">Đã chọn</span>
                             </div>
-                            <p class="payment-info-sub">Visa, Thẻ ngân hàng</p>
+                            <p class="payment-info-sub">Visa, Thẻ ngân hàng, VNPAY Sandbox</p>
                         </div>
                     </label>
                 </div>
@@ -195,26 +199,132 @@
     </form>
 </div>
 
+<!-- ================= MODAL POP-UP CHỌN CỔNG ONLINE ================= -->
+<div id="paymentModal" class="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative border border-gray-100">
+
+        <!-- Nút đóng (X) -->
+        <button type="button" onclick="closePaymentModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition">
+            <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+
+        <div class="text-center mb-5">
+            <h3 class="text-lg font-black text-gray-900">Chọn cổng thanh toán trực tuyến</h3>
+            <p class="text-xs text-gray-500 mt-1">Đơn hàng của bạn sẽ được chuyển tiếp an toàn</p>
+        </div>
+
+        <!-- Danh sách 4 cổng -->
+        <div class="space-y-3 mb-6">
+            <!-- 1. VNPAY Sandbox (Khả dụng - Click để đi tiếp) -->
+            <div onclick="submitWithVNPay()"
+                 class="border-2 border-blue-600 bg-blue-50/40 rounded-xl p-3.5 flex items-center justify-between cursor-pointer hover:bg-blue-50 transition shadow-xs">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-10 bg-white border border-gray-200 rounded-lg flex items-center justify-center shadow-xs">
+                        <span class="font-black text-sm tracking-tight">
+                            <span class="text-[#005baa]">VN</span><span class="text-[#ed1c24]">PAY</span>
+                        </span>
+                    </div>
+                    <div class="text-left">
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-gray-900 text-sm">VNPAY Sandbox</span>
+                            <span class="bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-full">Khuyên dùng</span>
+                        </div>
+                        <p class="text-[11px] text-gray-500">Quét mã QR, Thẻ ATM 40+ ngân hàng</p>
+                    </div>
+                </div>
+                <i class="fa-solid fa-chevron-right text-blue-600 text-xs"></i>
+            </div>
+
+            <!-- 2. Thẻ Quốc tế (Bảo trì) -->
+            <div onclick="alert('Cổng Thẻ quốc tế đang trong giai đoạn cấu hình.')"
+                 class="border border-gray-200 bg-gray-50/70 rounded-xl p-3.5 flex items-center justify-between opacity-60 cursor-not-allowed">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-10 bg-white border border-gray-200 rounded-lg flex items-center justify-center shadow-xs">
+                        <span class="italic font-black text-sm text-[#1a1f71]">VISA</span>
+                    </div>
+                    <div class="text-left">
+                        <span class="font-semibold text-gray-700 text-sm">Thẻ Quốc tế (Visa / Master)</span>
+                        <p class="text-[11px] text-gray-400">Tạm thời bảo trì</p>
+                    </div>
+                </div>
+                <span class="text-[10px] bg-gray-200 text-gray-600 px-2 py-0.5 rounded font-bold">Bảo trì</span>
+            </div>
+
+            <!-- 3. Ví MoMo (Bảo trì) -->
+            <div onclick="alert('Cổng MoMo đang trong giai đoạn cấu hình.')"
+                 class="border border-gray-200 bg-gray-50/70 rounded-xl p-3.5 flex items-center justify-between opacity-60 cursor-not-allowed">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-10 bg-[#a50064] rounded-lg flex items-center justify-center text-white text-xs font-bold shadow-xs">
+                        MoMo
+                    </div>
+                    <div class="text-left">
+                        <span class="font-semibold text-gray-700 text-sm">Ví điện tử MoMo</span>
+                        <p class="text-[11px] text-gray-400">Tạm thời bảo trì</p>
+                    </div>
+                </div>
+                <span class="text-[10px] bg-gray-200 text-gray-600 px-2 py-0.5 rounded font-bold">Bảo trì</span>
+            </div>
+        </div>
+
+        <button type="button" onclick="closePaymentModal()" class="w-full py-2.5 text-xs font-bold text-gray-500 hover:text-gray-800 transition">
+            Hủy và chọn lại
+        </button>
+    </div>
+</div>
+
 <jsp:include page="includes/footer.jsp" />
 
+<!-- ================= SCRIPT XỬ LÝ SỰ KIỆN ================= -->
 <script>
     function selectPayment(method) {
         const optCod = document.getElementById('opt-cod');
         const optOnline = document.getElementById('opt-online');
         const badgeCod = document.getElementById('badge-cod');
         const badgeOnline = document.getElementById('badge-online');
+        const radioCod = optCod.querySelector('input[type="radio"]');
+        const radioOnline = optOnline.querySelector('input[type="radio"]');
 
         if (method === 'COD') {
             optCod.classList.add('active');
             optOnline.classList.remove('active');
             badgeCod.classList.remove('hidden');
             badgeOnline.classList.add('hidden');
+            radioCod.checked = true;
         } else {
             optOnline.classList.add('active');
             optCod.classList.remove('active');
             badgeOnline.classList.remove('hidden');
             badgeCod.classList.add('hidden');
+            radioOnline.checked = true;
         }
+    }
+
+    // Bắt sự kiện bấm nút "Xác nhận đặt hàng"
+    const checkoutForm = document.getElementById('checkoutForm');
+    const paymentModal = document.getElementById('paymentModal');
+
+    checkoutForm.addEventListener('submit', function (e) {
+        const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+
+        // Nếu chọn thanh toán Online -> Chặn submit form và hiện pop-up lên
+        if (paymentMethod === 'ONLINE') {
+            e.preventDefault();
+            if (checkoutForm.checkValidity()) {
+                paymentModal.classList.remove('hidden');
+            } else {
+                checkoutForm.reportValidity();
+            }
+        }
+        // Nếu chọn COD -> Form tự động submit bình thường
+    });
+
+    function closePaymentModal() {
+        paymentModal.classList.add('hidden');
+    }
+
+    // Khi khách click vào thẻ VNPAY trên pop-up
+    function submitWithVNPay() {
+        checkoutForm.submit(); // Cho phép form gửi đi sang CheckoutController
     }
 </script>
 
