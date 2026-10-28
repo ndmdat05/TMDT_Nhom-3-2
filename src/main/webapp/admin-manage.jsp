@@ -1,129 +1,132 @@
-<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" language="java" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java" isELIgnored="false" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
-<c:set var="ctx" value="${pageContext.request.contextPath}"/>
-<%-- activeTab: users | products | orders | dashboard | content-review | report-center | support-center --%>
-<c:set var="inGroup" value="${activeTab == 'content-review' || activeTab == 'report-center' || activeTab == 'support-center'}"/>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>MangaZ Admin - Quản lý Hệ thống</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MangaVault Admin Portal</title>
+
+    <!-- Tailwind CSS CDN & FontAwesome Icons -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="${ctx}/css/admin-tab-dashboard.css">
-    <link rel="stylesheet" href="${ctx}/css/admin-tab-modules.css">
-    <style> body { font-family: 'Inter', sans-serif; background-color: #FFFFFF; color: #111827; } </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        vault: {
+                            sidebar: '#0f172a', // Slate 900
+                            card: '#1e1b4b',    // Deep Indigo
+                            primary: '#4f46e5', // Indigo 600
+                            hover: '#4338ca'    // Indigo 700
+                        }
+                    }
+                }
+            }
+        }
+    </script>
 </head>
-<body class="min-h-screen flex flex-col bg-white" data-page="admin">
+<body class="bg-gray-50 font-sans text-gray-800 antialiased min-h-screen flex">
 
-<header class="bg-white border-b border-gray-200 sticky top-0 z-50 h-[72px] flex items-center px-6">
-    <div class="flex items-center gap-4 w-1/3">
-        <span class="text-xl font-bold text-orange-500">MANGAZ</span>
-        <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded font-bold border border-gray-200">Admin Portal</span>
-    </div>
-    <div class="w-2/3 flex justify-end items-center gap-3">
-        <a href="${ctx}/home" class="text-sm font-semibold text-gray-600 hover:text-gray-900 px-3 py-2">Trang chủ</a>
-        <a href="${ctx}/seller-manage" class="text-sm font-bold text-white bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg">+ Đăng bài / Trade</a>
-        <div class="w-9 h-9 rounded bg-indigo-600 flex items-center justify-center text-white font-bold text-sm">AD</div>
-    </div>
-</header>
-
-<main class="flex-grow w-full flex">
-    <!-- SIDEBAR -->
-    <aside class="w-[260px] shrink-0 border-r border-gray-200 p-6 sticky top-[72px] h-[calc(100vh-72px)] overflow-y-auto">
-        <nav class="space-y-2 text-sm font-semibold">
-
-            <a href="${ctx}/admin/manage?tab=dashboard"
-               class="flex items-center gap-3 px-4 py-3 rounded-lg ${activeTab == 'dashboard' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'text-gray-600 hover:bg-gray-50'}">
-                <i class="fas fa-chart-line w-5 text-center"></i> Dashboard
-            </a>
-            <a href="${ctx}/admin/manage?tab=users"
-               class="flex items-center gap-3 px-4 py-3 rounded-lg ${activeTab == 'users' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'text-gray-600 hover:bg-gray-50'}">
-                <i class="fas fa-users w-5 text-center"></i> Quản lý Người dùng
-            </a>
-            <a href="${ctx}/admin/manage?tab=products"
-               class="flex items-center gap-3 px-4 py-3 rounded-lg ${activeTab == 'products' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'text-gray-600 hover:bg-gray-50'}">
-                <i class="fas fa-book w-5 text-center"></i> Quản lý Sản phẩm
-            </a>
-            <a href="${ctx}/admin/manage?tab=orders"
-               class="flex items-center gap-3 px-4 py-3 rounded-lg ${activeTab == 'orders' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'text-gray-600 hover:bg-gray-50'}">
-                <i class="fas fa-shopping-bag w-5 text-center"></i> Quản lý Đơn hàng
-            </a>
-
-            <%-- TAB 5: DROPDOWN (bấm chỉ xổ ra/thu vào, KHÔNG chuyển trang) --%>
-            <div>
-                <button type="button" id="grpToggle" aria-expanded="${inGroup}" aria-controls="grpMenu"
-                        class="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-lg text-left ${inGroup ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'text-gray-600 hover:bg-gray-50'}">
-                    <span class="flex items-center gap-3">
-                        <i class="fas fa-layer-group w-5 text-center"></i> Quản lý nội dung &amp; hỗ trợ
-                    </span>
-                    <i id="grpChevron" class="fas fa-chevron-down text-xs transition-transform ${inGroup ? 'rotate-180' : ''}"></i>
-                </button>
-
-                <div id="grpMenu" class="${inGroup ? '' : 'hidden'} mt-1 ml-5 pl-3 border-l border-gray-200 space-y-1">
-                    <a href="${ctx}/admin/manage?tab=content-review"
-                       class="flex items-center gap-3 px-3 py-2 rounded-lg ${activeTab == 'content-review' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'text-gray-600 hover:bg-gray-50'}">
-                        <i class="fas fa-clipboard-check w-4 text-center"></i> Kiểm duyệt bài đăng
-                    </a>
-                    <a href="${ctx}/admin/manage?tab=report-center"
-                       class="flex items-center gap-3 px-3 py-2 rounded-lg ${activeTab == 'report-center' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'text-gray-600 hover:bg-gray-50'}">
-                        <i class="fas fa-shield-halved w-4 text-center"></i> Báo cáo
-                    </a>
-                    <a href="${ctx}/admin/manage?tab=support-center"
-                       class="flex items-center gap-3 px-3 py-2 rounded-lg ${activeTab == 'support-center' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'text-gray-600 hover:bg-gray-50'}">
-                        <i class="fas fa-headset w-4 text-center"></i> Hỗ trợ khách hàng
-                    </a>
-                </div>
+<!-- SIDEBAR BÊN TRÁI: MANGA VAULT DARK SLATE -->
+<aside class="w-64 bg-vault-sidebar text-white flex-shrink-0 min-h-screen flex flex-col justify-between p-4 border-r border-slate-800">
+    <div>
+        <!-- LOGO BRANDING -->
+        <div class="flex items-center gap-3 px-3 py-4 border-b border-slate-800 mb-6">
+            <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center font-black text-lg text-white shadow-lg shadow-indigo-500/30">
+                <i class="fa-solid fa-book-open"></i>
             </div>
+            <div>
+                <h1 class="font-extrabold text-base tracking-tight leading-tight text-white">MangaVault</h1>
+                <span class="text-[11px] text-indigo-400 font-semibold uppercase tracking-wider">Admin Portal</span>
+            </div>
+        </div>
 
+        <!-- MENU TÍNH NĂNG MANAGEMENT -->
+        <nav class="space-y-1.5 text-sm font-semibold">
+            <a href="${pageContext.request.contextPath}/dashboard"
+               class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab == 'dashboard' || empty activeTab ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'}">
+                <i class="fa-solid fa-chart-line w-5"></i> Tổng quan sàn
+            </a>
+
+            <a href="${pageContext.request.contextPath}/admin/content-review"
+               class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab == 'content-review' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'}">
+                <i class="fa-solid fa-square-check w-5"></i> Duyệt bài đăng manga
+            </a>
+
+            <a href="${pageContext.request.contextPath}/admin/report-center"
+               class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab == 'report-center' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'}">
+                <i class="fa-solid fa-shield-cat w-5"></i> Báo cáo & Khiếu nại
+            </a>
+
+            <a href="${pageContext.request.contextPath}/admin/support-center"
+               class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab == 'support-center' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'}">
+                <i class="fa-solid fa-headset w-5"></i> Hỗ trợ khách hàng
+            </a>
         </nav>
-    </aside>
+    </div>
 
-    <!-- CONTENT: mỗi tab là 1 fragment, cùng khung layout -->
-    <section class="flex-grow min-w-0 p-8">
+    <!-- FOOTER USER PROFILE & LOGOUT -->
+    <div class="pt-4 border-t border-slate-800">
+        <div class="flex items-center gap-3 px-2 mb-3">
+            <div class="w-8 h-8 rounded-full bg-indigo-950 text-indigo-400 font-bold flex items-center justify-center text-xs border border-indigo-800">
+                AD
+            </div>
+            <div class="min-w-0 flex-1">
+                <div class="text-xs font-bold text-slate-200 truncate">${sessionScope.user.full_name != null ? sessionScope.user.full_name : sessionScope.user.username}</div>
+                <div class="text-[10px] text-slate-400 truncate">Administrator</div>
+            </div>
+        </div>
+        <a href="${pageContext.request.contextPath}/logout" class="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-slate-800 hover:bg-rose-950/60 text-slate-300 hover:text-rose-400 text-xs font-bold transition-all border border-slate-700">
+            <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
+        </a>
+    </div>
+</aside>
+
+<!-- CONTAINER NỘI DUNG CHÍNH -->
+<div class="flex-grow flex flex-col min-w-0">
+
+    <!-- HEADER TRÊN CÙNG -->
+    <header class="bg-white border-b border-gray-200 px-8 py-3.5 flex items-center justify-between shadow-xs">
+        <div class="flex items-center gap-2 text-xs text-gray-400">
+            <a href="${pageContext.request.contextPath}/home" target="_blank" class="hover:text-indigo-600 flex items-center gap-1 font-semibold text-gray-600">
+                <i class="fa-solid fa-globe"></i> Xem Trang Chủ Sàn
+            </a>
+        </div>
+
+        <div class="flex items-center gap-3">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Sàn Hoạt Động BÌNH THƯỜNG
+                </span>
+        </div>
+    </header>
+
+    <!-- FRAGMENT NHÚNG (Đã đổi đường dẫn trực tiếp về /admin-tabs/...) -->
+    <main class="p-8 flex-grow">
         <c:choose>
-            <c:when test="${activeTab == 'dashboard'}">
-                <jsp:include page="/WEB-INF/admin-tabs/_dashboard.jsp"/>
+            <c:when test="${activeTab == 'dashboard' || empty activeTab}">
+                <jsp:include page="/admin-tabs/_dashboard.jsp"/>
             </c:when>
             <c:when test="${activeTab == 'content-review'}">
-                <jsp:include page="/WEB-INF/admin-tabs/_content-review.jsp"/>
+                <jsp:include page="/admin-tabs/_content-review.jsp"/>
             </c:when>
             <c:when test="${activeTab == 'report-center'}">
-                <jsp:include page="/WEB-INF/admin-tabs/_report-center.jsp"/>
+                <jsp:include page="/admin-tabs/_report-center.jsp"/>
             </c:when>
             <c:when test="${activeTab == 'support-center'}">
-                <jsp:include page="/WEB-INF/admin-tabs/_support-center.jsp"/>
+                <jsp:include page="/admin-tabs/_support-center.jsp"/>
             </c:when>
             <c:otherwise>
-                <%-- users / products / orders --%>
-                <jsp:include page="/WEB-INF/admin-tabs/_manage.jsp"/>
+                <jsp:include page="/admin-tabs/_dashboard.jsp"/>
             </c:otherwise>
         </c:choose>
-    </section>
-</main>
+    </main>
+</div>
 
-<script>
-    (function () {
-        var btn = document.getElementById('grpToggle');
-        var menu = document.getElementById('grpMenu');
-        var chev = document.getElementById('grpChevron');
-        btn.addEventListener('click', function (e) {
-            e.preventDefault();               // chỉ xổ dropdown, không điều hướng
-            var open = menu.classList.toggle('hidden') === false;
-            btn.setAttribute('aria-expanded', open);
-            chev.classList.toggle('rotate-180', open);
-        });
-    })();
-</script>
-
-<c:if test="${activeTab == 'dashboard'}">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-    <script src="${ctx}/js/dashboard.js"></script>
-</c:if>
-<c:if test="${activeTab == 'content-review'}">
-    <script src="${ctx}/js/admin-modules.js"></script>
-</c:if>
 </body>
 </html>

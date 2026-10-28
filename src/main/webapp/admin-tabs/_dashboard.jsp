@@ -1,186 +1,182 @@
-<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" language="java" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java" isELIgnored="false" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
-<fmt:setLocale value="vi_VN"/>
-<c:set var="ctx" value="${pageContext.request.contextPath}"/>
-<c:set var="stats" value="${dash.stats}"/>
-<%-- Fragment: tab Dashboard (bỏ sidebar riêng, dùng sidebar chung của admin-layout) --%>
-<%-- Form rỗng: các ô lọc ngày / trạng thái bên dưới gắn vào form này bằng thuộc tính form="dashForm" --%>
-<form id="dashForm" method="get" action="${ctx}/admin/manage">
-    <input type="hidden" name="tab" value="dashboard">
-</form>
 
-<div class="tab-dashboard">
-<div class="dash">
-    <main>
-        <div class="mh">
-            <div><h1 style="font-size:19px">Trung tâm Quản trị & Thống kê MangaVault</h1>
-                <p class="sub">Giám sát dòng ký quỹ Escrow, tiến độ thẩm định Grab CGC và phân đối giá trị truyện
-                    tranh.</p></div>
+<div class="space-y-6">
+
+    <!-- TIÊU ĐỀ TRANG TỔNG QUAN -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-black text-gray-900 tracking-tight">Tổng Quan Hoạt Động Sàn MangaVault</h1>
+            <p class="text-xs text-gray-500 mt-1">Theo dõi dòng tiền ký quỹ Escrow, bài đăng manga chờ duyệt và chỉ số tăng trưởng.</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="${pageContext.request.contextPath}/admin/content-review"
+               class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-sm transition flex items-center gap-2">
+                <i class="fa-solid fa-list-check"></i> Duyệt Bài Đăng (${stats.pendingAppraisals})
+            </a>
+        </div>
+    </div>
+
+    <!-- 4 THẺ CHỈ SỐ DOANH THU & GIAO DỊCH (KPI CARDS) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+
+        <!-- CARD 1: TỔNG GMV KÝ QUỸ -->
+        <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs flex flex-col justify-between">
+            <div class="flex items-center justify-between">
+                <span class="text-[11px] font-extrabold text-gray-400 uppercase tracking-wider">TỔNG GMV KÝ QUỸ</span>
+                <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                    <i class="fa-solid fa-shield-halved text-sm"></i>
+                </div>
+            </div>
+            <div class="mt-3">
+                <div class="text-2xl font-black text-gray-900">
+                    <fmt:formatNumber value="${stats.totalEscrowValue}" pattern="#,###"/> <span class="text-xs font-bold text-indigo-600">đ</span>
+                </div>
+                <div class="mt-2 text-[11px] font-semibold text-gray-500 flex items-center gap-1">
+                    <c:choose>
+                        <c:when test="${stats.escrowChangePercent != null && stats.escrowChangePercent >= 0}">
+                            <span class="text-emerald-600 font-bold">↑ +${stats.escrowChangePercent}%</span> so với kỳ trước
+                        </c:when>
+                        <c:when test="${stats.escrowChangePercent != null}">
+                            <span class="text-rose-600 font-bold">↓ ${stats.escrowChangePercent}%</span> so với kỳ trước
+                        </c:when>
+                        <c:otherwise><span class="text-gray-400">Chưa đủ dữ liệu so sánh</span></c:otherwise>
+                    </c:choose>
+                </div>
+            </div>
+        </div>
+
+        <!-- CARD 2: BÀI ĐĂNG CHỜ GIÁM ĐỊNH -->
+        <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs flex flex-col justify-between">
+            <div class="flex items-center justify-between">
+                <span class="text-[11px] font-extrabold text-gray-400 uppercase tracking-wider">MANGA CHỜ DUYỆT</span>
+                <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+                    <i class="fa-solid fa-book text-sm"></i>
+                </div>
+            </div>
+            <div class="mt-3">
+                <div class="text-3xl font-black text-gray-900">${stats.pendingAppraisals} <span class="text-xs font-semibold text-gray-400">truyện</span></div>
+                <div class="mt-2 text-[11px] font-bold text-amber-600">
+                    ${stats.pendingAppraisals > 0 ? 'Cần duyệt để lên Trang Chủ' : 'Đã duyệt hết bài đăng'}
+                </div>
+            </div>
+        </div>
+
+        <!-- CARD 3: THÀNH VIÊN HOẠT ĐỘNG -->
+        <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs flex flex-col justify-between">
+            <div class="flex items-center justify-between">
+                <span class="text-[11px] font-extrabold text-gray-400 uppercase tracking-wider">THÀNH VIÊN SÀN</span>
+                <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <i class="fa-solid fa-users text-sm"></i>
+                </div>
+            </div>
+            <div class="mt-3">
+                <div class="text-3xl font-black text-gray-900">${stats.activeCollectors} <span class="text-xs font-semibold text-gray-400">tài khoản</span></div>
+                <div class="mt-2 text-[11px] text-gray-500 font-medium">
+                    <i class="fa-solid fa-user-plus text-blue-500 mr-1"></i> +${stats.newCollectorsToday} đăng ký mới hôm nay
+                </div>
+            </div>
+        </div>
+
+        <!-- CARD 4: TRANH CHẤP / BÁO CÁO -->
+        <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs flex flex-col justify-between">
+            <div class="flex items-center justify-between">
+                <span class="text-[11px] font-extrabold text-gray-400 uppercase tracking-wider">BÁO CÁO KHIẾU NẠI</span>
+                <div class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+                    <i class="fa-solid fa-triangle-exclamation text-sm"></i>
+                </div>
+            </div>
+            <div class="mt-3">
+                <div class="text-3xl font-black text-gray-900">${stats.disputeCount} <span class="text-xs font-semibold text-gray-400">khiếu nại</span></div>
+                <div class="mt-2 text-[11px] font-bold text-rose-600">
+                    Tỷ lệ thành công: ${stats.successRatePercent}%
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- KHỐI BIỂU ĐỒ DOANH THU KÝ QUỶ & BỘ LỌC NGUYÊN BẢN (KHÓA CHIỀU CAO TRÁNH KÉO DÀI VÔ TẬN) -->
+    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-2xs">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>
-                <div class="rg" id="rg">
-                    <button type="button" data-d="7" class="${dash.rangeDays == 7 ? 'on' : ''}">7 ngày</button>
-                    <button type="button" data-d="30" class="${dash.rangeDays == 30 ? 'on' : ''}">30 ngày</button>
-                    <button type="button" data-d="90" class="${dash.rangeDays == 90 ? 'on' : ''}">Quý này</button>
-                </div>
+                <h2 class="text-base font-extrabold text-gray-900">Biểu Đồ Giá Trị Giao Dịch GMV</h2>
+                <p class="text-xs text-gray-400 mt-0.5">Biểu đồ tổng doanh thu đơn hàng thành công qua hệ thống Ký quỹ Escrow</p>
             </div>
-        </div>
-        <button type="button" class="chk" disabled title="Chưa hỗ trợ">🛡 Báo cáo kiểm toán Escrow</button>
 
-        <%-- KPI: giá trị null = chưa có dữ liệu --%>
-        <div class="kpi" id="kpi">
-            <div class="card">
-                <small>Tổng GMV Ký quỹ</small>
-                <b><c:choose>
-                    <c:when test="${stats.totalEscrowValue != null}"><fmt:formatNumber value="${stats.totalEscrowValue}" pattern="#,##0"/> ₫</c:when>
-                    <c:otherwise>—</c:otherwise>
-                </c:choose></b>
-                <span><c:choose>
-                    <c:when test="${stats.escrowChangePercent != null}">
-                        ${stats.escrowChangePercent >= 0 ? '▲ +' : '▼ '}<fmt:formatNumber value="${stats.escrowChangePercent}" maxFractionDigits="1"/>% so với kỳ trước
-                    </c:when>
-                    <c:otherwise>Chưa có dữ liệu</c:otherwise>
-                </c:choose></span>
-            </div>
-            <div class="card">
-                <small>Đơn đấu giá thành công</small>
-                <b><c:choose>
-                    <c:when test="${stats.successfulOrders != null}"><fmt:formatNumber value="${stats.successfulOrders}" pattern="#,##0"/> phiên</c:when>
-                    <c:otherwise>—</c:otherwise>
-                </c:choose></b>
-                <span><c:choose>
-                    <c:when test="${stats.successRatePercent != null}">Tỷ lệ chốt <fmt:formatNumber value="${stats.successRatePercent}" maxFractionDigits="1"/>%</c:when>
-                    <c:otherwise>Chưa có dữ liệu</c:otherwise>
-                </c:choose></span>
-            </div>
-            <div class="card">
-                <small>Truyện hiếm chờ thẩm định</small>
-                <b><c:choose>
-                    <c:when test="${stats.pendingAppraisals != null}"><fmt:formatNumber value="${stats.pendingAppraisals}" pattern="#,##0"/> hồ sơ</c:when>
-                    <c:otherwise>—</c:otherwise>
-                </c:choose></b>
-                <span><c:if test="${stats.pendingAppraisals == null}">Chưa có dữ liệu</c:if></span>
-            </div>
-            <div class="card">
-                <small>Collector hoạt động</small>
-                <b><c:choose>
-                    <c:when test="${stats.activeCollectors != null}"><fmt:formatNumber value="${stats.activeCollectors}" pattern="#,##0"/> người</c:when>
-                    <c:otherwise>—</c:otherwise>
-                </c:choose></b>
-                <span><c:choose>
-                    <c:when test="${stats.newCollectorsToday != null}">▲ +<fmt:formatNumber value="${stats.newCollectorsToday}" pattern="#,##0"/> mới hôm nay</c:when>
-                    <c:when test="${stats.activeCollectors == null}">Chưa có dữ liệu</c:when>
-                </c:choose></span>
+            <!-- NÚT CHỌN THỜI GIAN: NGÀY / TUẦN / THÁNG / NĂM -->
+            <div class="flex items-center bg-gray-100 p-1 rounded-xl text-xs font-bold text-gray-600">
+                <a href="?timeFrame=day" class="px-3.5 py-1.5 rounded-lg transition ${selectedTimeFrame == 'day' || empty selectedTimeFrame ? 'bg-indigo-600 text-white shadow-xs' : 'hover:text-gray-900'}">Ngày</a>
+                <a href="?timeFrame=week" class="px-3.5 py-1.5 rounded-lg transition ${selectedTimeFrame == 'week' ? 'bg-indigo-600 text-white shadow-xs' : 'hover:text-gray-900'}">Tuần</a>
+                <a href="?timeFrame=month" class="px-3.5 py-1.5 rounded-lg transition ${selectedTimeFrame == 'month' ? 'bg-indigo-600 text-white shadow-xs' : 'hover:text-gray-900'}">Tháng</a>
+                <a href="?timeFrame=year" class="px-3.5 py-1.5 rounded-lg transition ${selectedTimeFrame == 'year' ? 'bg-indigo-600 text-white shadow-xs' : 'hover:text-gray-900'}">Năm</a>
             </div>
         </div>
 
-        <div class="ch">
-            <section class="card"><h3>Thống kê giá trị ký quỹ (biểu đồ cột)</h3>
-                <p class="sub">Chọn khoảng thời gian cần xem: từ ngày — đến ngày.</p>
-                <div class="flt">Từ ngày <input type="date" id="from" name="from" form="dashForm" value="${dash.from}">
-                    Đến ngày <input type="date" id="to" name="to" form="dashForm" value="${dash.to}">
-                    <button type="submit" id="ap" form="dashForm">Áp dụng</button>
-                    <span id="msg" class="err"><c:out value="${dash.errorMessage}"/></span></div>
-                <c:choose>
-                    <c:when test="${empty dash.escrowByDay}">
-                        <div class="empty">Chưa có dữ liệu ký quỹ trong khoảng thời gian này.</div>
-                    </c:when>
-                    <c:otherwise>
-                        <div class="cv"><canvas id="bar"></canvas></div>
-                    </c:otherwise>
-                </c:choose>
-            </section>
-            <section class="card"><h3>Tỷ trọng danh mục truyện (biểu đồ tròn)</h3>
-                <p class="sub">Phân bổ giá trị theo từng Master Catalog.</p>
-                <c:choose>
-                    <c:when test="${empty dash.categoryShares}">
-                        <div class="empty">Chưa có dữ liệu danh mục.</div>
-                    </c:when>
-                    <c:otherwise>
-                        <div class="pie">
-                            <div class="cv"><canvas id="pie"></canvas></div>
-                            <div class="lg" id="lg"></div>
-                        </div>
-                    </c:otherwise>
-                </c:choose>
-            </section>
+        <!-- CONTAINER CHART: ĐÃ KHÓA CHIỀU CAO h-[320px] ĐỂ TRÁNH KÉO DÀI VÔ TẬN -->
+        <div class="relative w-full h-[320px]">
+            <canvas id="escrowChart"></canvas>
         </div>
+    </div>
 
-        <c:if test="${stats.disputeCount != null && stats.disputeCount > 0}">
-            <div class="alert">
-                <div><b>⚠ Cảnh báo Rủi ro Trung gian: ${stats.disputeCount} trường hợp mâu thuẫn cần xác thực thủ công</b>
-                    <p>Hệ thống ghi nhận các giao dịch đang tranh chấp cần can thiệp.</p></div>
-                <div>
-                    <a class="p" href="${ctx}/admin/manage?tab=dashboard&status=dispute">Xem giao dịch tranh chấp</a>
-                </div>
-            </div>
-        </c:if>
-
-        <section class="card tx">
-            <div class="hh">
-                <div><h3>Giao dịch Đấu giá & Ký quỹ Gần nhất</h3>
-                    <p class="sub">Danh sách theo dõi các phiên đấu giá và ký quỹ</p></div>
-                <div class="ctl">
-                    <select id="txStatus" name="status" form="dashForm" title="Bộ lọc trạng thái">
-                        <option value="">⇅ Tất cả trạng thái</option>
-                        <option value="released" ${dash.statusFilter == 'released' ? 'selected' : ''}>Đã giao & Giải ngân</option>
-                        <option value="holding" ${dash.statusFilter == 'holding' ? 'selected' : ''}>Đang giữ ký quỹ</option>
-                        <option value="reviewing" ${dash.statusFilter == 'reviewing' ? 'selected' : ''}>Đang kiểm duyệt phát hành</option>
-                        <option value="dispute" ${dash.statusFilter == 'dispute' ? 'selected' : ''}>Tranh chấp</option>
-                    </select>
-                </div>
-            </div>
-            <table>
-                <thead>
-                <tr>
-                    <th>Mã ký quỹ</th>
-                    <th>Tên bộ truyện quý</th>
-                    <th>Người mua</th>
-                    <th>Người gán</th>
-                    <th>Số tiền</th>
-                    <th>Trạng thái</th>
-                </tr>
-                </thead>
-                <tbody id="tx">
-                <c:forEach var="t" items="${dash.transactions}">
-                    <tr>
-                        <td><b><c:out value="${t.escrowCode}"/></b></td>
-                        <td class="tt"><c:out value="${t.title}"/>
-                            <small><c:out value="${t.subtitle}"/></small></td>
-                        <td><c:out value="${t.buyer}"/></td>
-                        <td><c:out value="${t.seller}"/></td>
-                        <td><b><c:choose>
-                            <c:when test="${t.amount != null}"><fmt:formatNumber value="${t.amount}" pattern="#,##0"/> ₫</c:when>
-                            <c:otherwise>—</c:otherwise>
-                        </c:choose></b></td>
-                        <td><span class="badge ${t.badgeClass}"><c:out value="${t.statusLabel}"/></span></td>
-                    </tr>
-                </c:forEach>
-                <c:if test="${empty dash.transactions}">
-                    <tr><td colspan="6" class="empty">Chưa có giao dịch.</td></tr>
-                </c:if>
-                </tbody>
-            </table>
-            <div class="pg"><span>Hiển thị <fmt:formatNumber value="${dash.transactions.size()}" pattern="#,##0"/> trên <fmt:formatNumber value="${dash.totalTransactions}" pattern="#,##0"/> giao dịch gần nhất</span>
-                <c:if test="${dash.totalTransactions > 0}">
-                    <c:url var="pgBase" value="/admin/manage">
-                        <c:param name="tab" value="dashboard"/>
-                        <c:param name="from" value="${dash.from}"/>
-                        <c:param name="to" value="${dash.to}"/>
-                        <c:if test="${not empty dash.statusFilter}"><c:param name="status" value="${dash.statusFilter}"/></c:if>
-                    </c:url>
-                    <div>
-                        <c:if test="${dash.page > 1}"><a class="pgb" href="${pgBase}&page=${dash.page - 1}">‹</a></c:if>
-                        <c:forEach var="p" items="${dash.pageNumbers}">
-                            <a class="pgb ${p == dash.page ? 'on' : ''}" href="${pgBase}&page=${p}">${p}</a>
-                        </c:forEach>
-                        <c:if test="${dash.page < dash.totalPages}"><a class="pgb" href="${pgBase}&page=${dash.page + 1}">›</a></c:if>
-                    </div>
-                </c:if>
-            </div>
-        </section>
-    </main>
 </div>
-</div>
-<%-- Dữ liệu biểu đồ do DashboardServlet tạo từ Service/DAO (rỗng nếu chưa có) --%>
-<script type="application/json" id="dash-data">${chartJson}</script>
+
+<!-- SCRIPT RENDER CHART.JS AN TOÀN -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const ctx = document.getElementById('escrowChart');
+        if (!ctx) return;
+
+        // Render dữ liệu từ Java Backend
+        const labels = [
+            <c:forEach var="pt" items="${chartPoints}" varStatus="loop">
+            "${pt.day}"${!loop.last ? ',' : ''}
+            </c:forEach>
+        ];
+
+        const dataValues = [
+            <c:forEach var="pt" items="${chartPoints}" varStatus="loop">
+            ${pt.value}${!loop.last ? ',' : ''}
+            </c:forEach>
+        ];
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels.length > 0 ? labels : ["Chưa có dữ liệu"],
+                datasets: [{
+                    label: 'Giá trị GMV (VNĐ)',
+                    data: dataValues.length > 0 ? dataValues : [0],
+                    backgroundColor: '#4f46e5',
+                    hoverBackgroundColor: '#4338ca',
+                    borderRadius: 6,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false, // BẮT BUỘC: Giữ chart vừa khít khung h-[320px], không bị giãn vĩnh viễn
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#f3f4f6' },
+                        ticks: {
+                            font: { size: 11 },
+                            callback: function(value) {
+                                return value.toLocaleString('vi-VN') + ' đ';
+                            }
+                        }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 11 } }
+                    }
+                }
+            }
+        });
+    });
+</script>

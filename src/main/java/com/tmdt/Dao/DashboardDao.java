@@ -6,10 +6,10 @@ import com.tmdt.Model.DashboardStats;
 import com.tmdt.Model.DashboardTransaction;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-
 
 public class DashboardDao extends BaseDao {
 
@@ -26,9 +26,9 @@ public class DashboardDao extends BaseDao {
                     " WHEN o.order_status = 'PENDING' THEN 'reviewing' " +
                     " ELSE 'cancelled' END";
 
-    /** Điều kiện lọc phải khớp 100% với STATUS_CASE ở trên. status đã được Service kiểm tra whitelist. */
+    /** Điều kiện lọc phải khớp 100% với STATUS_CASE ở trên. */
     private static String statusCondition(String status) {
-        if (status == null) return "";
+        if (status == null || status.isBlank()) return "";
         switch (status) {
             case "released":
                 return " AND o.order_status = 'COMPLETED' AND NOT " + DISPUTE_EXISTS + " ";
@@ -42,11 +42,6 @@ public class DashboardDao extends BaseDao {
                 return "";
         }
     }
-    // 4. Đếm tổng số giao dịch theo bộ lọc trạng thái (phục vụ phân trang)
-    public long countTransactions(String statusFilter) {
-        try {
-            boolean hasStatus = (statusFilter != null && !statusFilter.isBlank());
-            String sql = "SELECT COUNT(*) FROM orders " + (hasStatus ? "WHERE order_status = :status" : "");
 
     // 1. KPI tổng quan
     public DashboardStats getStats(LocalDate from, LocalDate to) {
@@ -75,13 +70,14 @@ public class DashboardDao extends BaseDao {
         LocalDate prevFrom = from.minusDays(span);
         BigDecimal prev = sumCompleted(prevFrom, prevTo);
         BigDecimal cur = stats.getTotalEscrowValue();
-        if (prev != null && prev.signum() > 0 && cur != null) {
+
+        if (prev != null && prev.compareTo(BigDecimal.ZERO) > 0 && cur != null) {
             double pct = cur.subtract(prev)
                     .multiply(BigDecimal.valueOf(100))
-                    .divide(prev, 1, java.math.RoundingMode.HALF_UP)
+                    .divide(prev, 1, RoundingMode.HALF_UP)
                     .doubleValue();
             stats.setEscrowChangePercent(pct);
-        } // prev = 0 -> để null: JSP hiển thị "Chưa có dữ liệu"
+        }
         return stats;
     }
 
@@ -95,14 +91,25 @@ public class DashboardDao extends BaseDao {
                 .one());
     }
 
-    // 2. Điểm vẽ biểu đồ cột theo ngày (chỉ đơn COMPLETED, cùng tiêu chí với KPI)
-    public List<DashboardChartPoint> getEscrowValueByDay(LocalDate from, LocalDate to) {
+    // 2. Điểm vẽ biểu đồ cột theo tiêu chí thời gian (day, week, month, year)
+    public List<DashboardChartPoint> getEscrowValueByTimeFrame(String timeFrame, LocalDate from, LocalDate to) {
+        String groupExpr;
+        if ("week".equalsIgnoreCase(timeFrame)) {
+            groupExpr = "DATE_FORMAT(created_at, '%Y-%u')"; // Nhóm theo năm-tuần
+        } else if ("month".equalsIgnoreCase(timeFrame)) {
+            groupExpr = "DATE_FORMAT(created_at, '%Y-%m')"; // Nhóm theo năm-tháng
+        } else if ("year".equalsIgnoreCase(timeFrame)) {
+            groupExpr = "YEAR(created_at)";                 // Nhóm theo năm
+        } else {
+            groupExpr = "DATE(created_at)";                 // Mặc định theo ngày
+        }
+
         String sql =
-                "SELECT DATE(created_at) AS `day`, COALESCE(SUM(total_amount), 0) AS `value` " +
+                "SELECT " + groupExpr + " AS `day`, COALESCE(SUM(total_amount), 0) AS `value` " +
                         "FROM orders " +
                         "WHERE order_status = 'COMPLETED' AND DATE(created_at) BETWEEN :from AND :to " +
-                        "GROUP BY DATE(created_at) " +
-                        "ORDER BY DATE(created_at) ASC";
+                        "GROUP BY " + groupExpr + " " +
+                        "ORDER BY " + groupExpr + " ASC";
 
         return get().withHandle(h -> h.createQuery(sql)
                 .bind("from", from)
@@ -111,7 +118,12 @@ public class DashboardDao extends BaseDao {
                 .list());
     }
 
-    // 3. Cơ cấu danh mục (bỏ đơn đã hủy)
+    // Giữ tương thích cho các hàm cũ gọi theo Ngày
+    public List<DashboardChartPoint> getEscrowValueByDay(LocalDate from, LocalDate to) {
+        return getEscrowValueByTimeFrame("day", from, to);
+    }
+
+    // 3. Cơ cấu danh mục
     public List<DashboardCategoryShare> getCategoryShares(LocalDate from, LocalDate to) {
         String sql =
                 "SELECT c.name AS `name`, COALESCE(SUM(oi.unit_price * oi.quantity), 0) AS `value` " +
