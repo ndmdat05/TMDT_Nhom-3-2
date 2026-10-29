@@ -121,6 +121,17 @@
             <c:when test="${activeTab == 'support-center'}">
                 <jsp:include page="/admin-tabs/_support-center.jsp"/>
             </c:when>
+            <c:when test="${activeTab == 'users'}">
+                <jsp:include page="/admin-tabs/_users.jsp"/>
+            </c:when>
+
+            <c:when test="${activeTab == 'data-management'}">
+                <jsp:include page="/admin-tabs/_data-management.jsp"/>
+            </c:when>
+
+            <c:when test="${activeTab == 'categories'}">
+                <jsp:include page="/admin-tabs/_categories.jsp"/>
+            </c:when>
             <c:otherwise>
                 <jsp:include page="/admin-tabs/_dashboard.jsp"/>
             </c:otherwise>

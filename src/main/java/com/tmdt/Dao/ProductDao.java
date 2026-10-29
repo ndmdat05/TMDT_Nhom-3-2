@@ -82,6 +82,41 @@ public class ProductDao {
         }
     }
 
+    // Lấy toàn bộ sản phẩm cho trang quản trị
+    // Bao gồm APPROVED, PENDING_APPROVAL, REJECTED, HIDDEN
+    // Không lấy sản phẩm đã bị xóa mềm (DELETED)
+    public List<Product> getAllProductsForAdmin() {
+        String sql = "SELECT p.id, p.title, p.price, " +
+                "       p.stock_quantity AS stockQuantity, " +
+                "       COALESCE(p.image_url, '') AS imageUrl, " +
+                "       p.description, " +
+                "       p.series_name AS seriesName, " +
+                "       p.author, " +
+                "       p.volume_number AS volumeNumber, " +
+                "       p.edition, " +
+                "       p.item_condition AS itemCondition, " +
+                "       p.language, " +
+                "       p.status, " +
+                "       p.seller_id AS sellerId, " +
+                "       u.full_name AS sellerName " +
+                "FROM products p " +
+                "LEFT JOIN users u ON p.seller_id = u.id " +
+                "WHERE p.status <> 'DELETED' " +
+                "ORDER BY p.id DESC";
+
+        try {
+            return JDBIConnector.get().withHandle(handle ->
+                    handle.createQuery(sql)
+                            .mapToBean(Product.class)
+                            .list()
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+    }
+
+
     // Lấy chi tiết 1 cuốn manga theo ID (Dùng cho TrangChiTiet và Form Chỉnh sửa)
     public Product getProductById(int id) {
         String sql = "SELECT p.id, p.title, p.price, p.stock_quantity AS stockQuantity, " +

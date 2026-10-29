@@ -63,7 +63,7 @@
                         </span>
                     </td>
                     <td class="px-6 py-4 text-center space-x-4 whitespace-nowrap">
-                        <form method="post" action="${ctx}/admin/manage" class="inline">
+                        <form method="post" action="${ctx}/admin/support-center" class="inline">
                             <input type="hidden" name="tab" value="support-center">
                             <input type="hidden" name="ticketId" value="${ticket.id}">
                             <input type="hidden" name="status" value="IN_REVIEW">
@@ -72,7 +72,7 @@
                                 <i class="fas fa-user-check text-lg"></i>
                             </button>
                         </form>
-                        <form method="post" action="${ctx}/admin/manage" class="inline">
+                        <form method="post" action="${ctx}/admin/support-center" class="inline">
                             <input type="hidden" name="tab" value="support-center">
                             <input type="hidden" name="ticketId" value="${ticket.id}">
                             <input type="hidden" name="status" value="RESOLVED">
