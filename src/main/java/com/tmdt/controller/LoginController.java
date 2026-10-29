@@ -8,7 +8,11 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-
+import com.tmdt.Dao.WishlistDao;
+import com.tmdt.Model.Product;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.io.IOException;
 
 @WebServlet("/login")
@@ -34,7 +38,13 @@ public class LoginController extends HttpServlet {
         if (user != null) {
             HttpSession session = request.getSession();
             session.setAttribute("user", user);
-
+            WishlistDao wishlistDao = new WishlistDao();
+            List<Product> wishList = wishlistDao.getWishlistByUserId(user.getId());
+            Map<Integer, Product> wishlistMap = new LinkedHashMap<>();
+            for (Product p : wishList) {
+                wishlistMap.put(p.getId(), p);
+            }
+            session.setAttribute("wishlist", wishlistMap);
             // PHÂN QUYỀN CHUYỂN HƯỚNG MỤC TIÊU:
             if ("ADMIN".equalsIgnoreCase(user.getRole())) {
                 response.sendRedirect(request.getContextPath() + "/dashboard");

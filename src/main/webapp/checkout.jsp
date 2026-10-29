@@ -226,7 +226,7 @@
                     </div>
                     <div class="text-left">
                         <div class="flex items-center gap-2">
-                            <span class="font-bold text-gray-900 text-sm">VNPAY Sandbox</span>
+                            <span class="font-bold text-gray-900 text-sm">VNPAY </span>
                             <span class="bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-full">Khuyên dùng</span>
                         </div>
                         <p class="text-[11px] text-gray-500">Quét mã QR, Thẻ ATM 40+ ngân hàng</p>

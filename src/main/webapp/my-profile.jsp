@@ -70,7 +70,7 @@
                     <a href="${pageContext.request.contextPath}/profile" class="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-indigo-50 text-indigo-600 font-semibold text-sm">
                         <i class="fas fa-user-circle w-5"></i> Hồ sơ cá nhân
                     </a>
-                    <a href="#" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-gray-600 hover:bg-gray-50 hover:text-indigo-600 font-medium text-sm transition-colors">
+                    <a href="${pageContext.request.contextPath}/my-orders" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-gray-600 hover:bg-gray-50 hover:text-indigo-600 font-medium text-sm transition-colors">
                         <i class="fas fa-shopping-bag w-5"></i> Đơn hàng của tôi
                     </a>
                     <a href="${pageContext.request.contextPath}/change-password" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-gray-600 hover:bg-gray-50 hover:text-indigo-600 font-medium text-sm transition-colors">

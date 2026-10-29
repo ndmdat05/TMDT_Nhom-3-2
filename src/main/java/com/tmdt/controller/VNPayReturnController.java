@@ -60,50 +60,44 @@ public class VNPayReturnController extends HttpServlet {
         String orderCode = request.getParameter("vnp_TxnRef");
         HttpSession session = request.getSession();
 
-        if (checkSignature) {
-            if ("00".equals(vnp_ResponseCode)) {
-                // THANH TOÁN THÀNH CÔNG -> LƯU VÀO DATABASE
-                Cart cart = (Cart) session.getAttribute("cart");
-                User user = (User) session.getAttribute("user");
-                String receiverName = (String) session.getAttribute("order_name");
-                String receiverPhone = (String) session.getAttribute("order_phone");
-                String address = (String) session.getAttribute("order_address");
+        if (checkSignature && "00".equals(vnp_ResponseCode)) {
+            // ==========================================
+            // 1. THANH TOÁN THÀNH CÔNG -> LƯU VÀO DATABASE
+            // ==========================================
+            Cart cart = (Cart) session.getAttribute("cart");
+            User user = (User) session.getAttribute("user");
+            String receiverName = (String) session.getAttribute("order_name");
+            String receiverPhone = (String) session.getAttribute("order_phone");
+            String address = (String) session.getAttribute("order_address");
 
-                if (cart != null) {
-                    OrderDao orderDao = new OrderDao();
-                    orderDao.createOrder(
-                            user != null ? user.getId() : 1,
-                            2, // seller_id mặc định
-                            receiverName,
-                            receiverPhone,
-                            address,
-                            cart.getTotalMoney(),
-                            "ONLINE", // Bắt buộc là 'ONLINE' theo ràng buộc chk_orders_pm
-                            "PAID",   // Bắt buộc theo ràng buộc chk_orders_ps
-                            orderCode
-                    );
+            if (cart != null) {
+                OrderDao orderDao = new OrderDao();
+                orderDao.createOrder(
+                        user != null ? user.getId() : 1,
+                        2, // seller_id mặc định
+                        receiverName,
+                        receiverPhone,
+                        address,
+                        cart.getTotalMoney(),
+                        "ONLINE",
+                        "PAID",
+                        orderCode,
+                        cart // <--- THÊM BIẾN CART VÀO ĐÂY
+                );
 
-                    // Xóa giỏ hàng và dọn session
-                    session.removeAttribute("cart");
-                    session.removeAttribute("order_name");
-                    session.removeAttribute("order_phone");
-                    session.removeAttribute("order_address");
-                    session.removeAttribute("order_email");
-                    session.removeAttribute("order_payment_method");
-                    session.removeAttribute("order_code");
-                }
-
-                request.setAttribute("transResult", "success");
-                request.setAttribute("orderCode", orderCode);
-            } else {
-                request.setAttribute("transResult", "failed");
-                request.setAttribute("message", "Giao dịch không thành công hoặc đã bị hủy (Mã lỗi: " + vnp_ResponseCode + ")");
+                // Xóa giỏ hàng và dữ liệu đặt hàng trong session
+                session.removeAttribute("cart");
+                session.removeAttribute("order_name");
+                session.removeAttribute("order_phone");
+                session.removeAttribute("order_address");
+                session.removeAttribute("order_email");
+                session.removeAttribute("order_payment_method");
+                session.removeAttribute("order_code");
             }
-        } else {
-            request.setAttribute("transResult", "invalid_signature");
-            request.setAttribute("message", "Chữ ký bảo mật không hợp lệ!");
-        }
 
-        request.getRequestDispatcher("/order-success.jsp").forward(request, response);
-    }
-}
+            request.getRequestDispatcher("/order-success.jsp").forward(request, response);
+
+        } else {
+            request.getRequestDispatcher("/order-failed.jsp").forward(request, response);
+        }
+    }}

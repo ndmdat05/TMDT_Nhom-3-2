@@ -52,7 +52,9 @@ public class CheckoutController extends HttpServlet {
         String phone = request.getParameter("phone");
         String address = request.getParameter("address");
         String paymentMethod = request.getParameter("paymentMethod");
-
+        String receiverName = request.getParameter("receiverName");
+        String receiverPhone = request.getParameter("receiverPhone");
+        String shippingAddress = request.getParameter("shippingAddress");
         // Mã đơn hàng định dạng chữ và số liền nhau
         int randomNum = (int) (100000 + Math.random() * 900000);
         String orderCode = "MGV" + randomNum;
@@ -70,21 +72,31 @@ public class CheckoutController extends HttpServlet {
         } else {
             // Luồng COD: Ghi ngay vào DB (payment_status phải là 'PENDING' để không lỗi check constraint)
             User user = (User) session.getAttribute("user");
+
+            // Ưu tiên lấy receiverName nếu form checkout có gửi, không thì dùng fullName
+            String finalReceiver = (receiverName != null && !receiverName.trim().isEmpty()) ? receiverName : fullName;
+            String finalPhone = (receiverPhone != null && !receiverPhone.trim().isEmpty()) ? receiverPhone : phone;
+            String finalAddress = (shippingAddress != null && !shippingAddress.trim().isEmpty()) ? shippingAddress : address;
+
             OrderDao orderDao = new OrderDao();
-            orderDao.createOrder(
+            // Thêm tham số cart vào cuối và hứng lấy newOrderId vừa tạo
+            int newOrderId = orderDao.createOrder(
                     user != null ? user.getId() : 1,
                     2, // seller_id mặc định của Kenji Vault
-                    fullName,
-                    phone,
-                    address,
+                    finalReceiver,
+                    finalPhone,
+                    finalAddress,
                     cart.getTotalMoney(),
                     "COD",
                     "PENDING",
-                    orderCode
+                    orderCode,
+                    cart // <--- THÊM CART VÀO ĐÂY ĐỂ LƯU TỪNG CUỐN VÀO ORDER_ITEMS
             );
 
+            // Xóa giỏ hàng trong session sau khi đã lưu xong vào database
             session.removeAttribute("cart");
-            response.sendRedirect(request.getContextPath() + "/order-success.jsp");
-        }
+
+            // Chuyển hướng thẳng sang trang chi tiết đơn hàng vừa tạo để xem 3 cuốn truyện
+            response.sendRedirect(request.getContextPath() + "/order-success.jsp");        }
     }
 }

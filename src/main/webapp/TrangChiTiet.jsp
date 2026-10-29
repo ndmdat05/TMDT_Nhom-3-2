@@ -142,38 +142,50 @@
                 <form action="${pageContext.request.contextPath}/cart" method="post" class="flex flex-col gap-3 m-0">
                     <input type="hidden" name="productId" value="${product.id}">
 
-                    <c:if test="${currentStock > 0}">
-                        <div class="flex items-center gap-3">
-                            <span class="text-xs font-bold text-gray-700 uppercase">Số lượng:</span>
-                            <div class="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white">
-                                <button type="button" onclick="adjustQty(-1)" class="w-8 h-8 flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold transition">-</button>
-                                <input type="number" id="quantity" name="quantity" value="1" min="1" max="${currentStock}"
-                                       class="w-12 h-8 text-center font-bold text-sm outline-none border-x border-gray-200">
-                                <button type="button" onclick="adjustQty(1)" class="w-8 h-8 flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold transition">+</button>
+                    <c:choose>
+                        <%-- TRƯỜNG HỢP CÒN HÀNG --%>
+                        <c:when test="${currentStock > 0}">
+                            <div class="flex items-center gap-3">
+                                <span class="text-xs font-bold text-gray-700 uppercase">Số lượng:</span>
+                                <div class="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white">
+                                    <button type="button" onclick="adjustQty(-1)" class="w-8 h-8 flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold transition">-</button>
+                                    <input type="number" id="quantity" name="quantity" value="1" min="1" max="${currentStock}"
+                                           class="w-12 h-8 text-center font-bold text-sm outline-none border-x border-gray-200">
+                                    <button type="button" onclick="adjustQty(1)" class="w-8 h-8 flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold transition">+</button>
+                                </div>
                             </div>
-                        </div>
 
-                        <!-- 2 NÚT DUY NHẤT: THÊM VÀO GIỎ & WISHLIST CẠNH NHAU -->
-                        <div class="flex items-center gap-2.5 mt-1">
-                            <button type="submit" name="action" value="add"
-                                    class="flex-1 h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-sm transition">
-                                <i class="fa-solid fa-cart-plus text-base"></i>
-                                <span class="text-sm">Thêm vào giỏ hàng</span>
-                            </button>
+                            <div class="flex items-center gap-2.5 mt-1">
+                                <!-- Nút 1: Thêm vào giỏ -->
+                                <button type="submit" name="action" value="add"
+                                        class="flex-1 h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-sm transition">
+                                    <i class="fa-solid fa-cart-plus text-base"></i>
+                                    <span class="text-sm">Thêm vào giỏ hàng</span>
+                                </button>
 
-                            <button type="submit" formaction="${pageContext.request.contextPath}/wishlist"
-                                    class="h-12 w-12 flex-shrink-0 flex items-center justify-center rounded-xl border transition ${isFavorited ? 'bg-rose-50 border-rose-200 text-rose-600' : 'bg-gray-50 hover:bg-rose-50 border-gray-200 hover:border-rose-200 text-gray-500 hover:text-rose-500'}"
-                                    title="${isFavorited ? 'Bỏ lưu khỏi kệ sách' : 'Lưu vào kệ sách'}">
-                                <i class="${isFavorited ? 'fa-solid text-rose-500' : 'fa-regular'} fa-heart text-lg"></i>
-                            </button>
-                        </div>
-                    </c:if>
+                                <!-- Nút 2: Trái tim -> Lưu vào wishlist và chuyển hướng sang /wishlist -->
+                                <a href="${pageContext.request.contextPath}/wishlist?action=add&productId=${product.id}"
+                                   class="h-12 w-12 flex-shrink-0 flex items-center justify-center rounded-xl border transition ${not empty sessionScope.wishlist[product.id] ? 'bg-rose-50 border-rose-200 text-rose-600' : 'bg-gray-50 hover:bg-rose-50 border-gray-200 hover:border-rose-200 text-gray-500 hover:text-rose-500'}"
+                                   title="${not empty sessionScope.wishlist[product.id] ? 'Đã có trong kệ sách' : 'Lưu vào kệ sách'}">
+                                    <i class="${not empty sessionScope.wishlist[product.id] ? 'fa-solid text-rose-500' : 'fa-regular'} fa-heart text-lg"></i>
+                                </a>
+                            </div>
+                        </c:when>
 
-                    <c:if test="${currentStock <= 0}">
-                        <button class="w-full h-12 bg-gray-200 text-gray-500 font-bold rounded-xl cursor-not-allowed" type="button" disabled>
-                            Ấn phẩm tạm hết hàng
-                        </button>
-                    </c:if>
+                        <%-- TRƯỜNG HỢP HẾT HÀNG (VẪN CHO BẤM LƯU VÀO KỆ SÁCH) --%>
+                        <c:otherwise>
+                            <div class="flex items-center gap-2.5 mt-1">
+                                <button class="flex-1 h-12 bg-gray-200 text-gray-500 font-bold rounded-xl cursor-not-allowed" type="button" disabled>
+                                    Ấn phẩm tạm hết hàng
+                                </button>
+                                <a href="${pageContext.request.contextPath}/wishlist?action=add&productId=${product.id}"
+                                   class="h-12 w-12 flex-shrink-0 flex items-center justify-center rounded-xl border transition ${not empty sessionScope.wishlist[product.id] ? 'bg-rose-50 border-rose-200 text-rose-600' : 'bg-gray-50 hover:bg-rose-50 border-gray-200 hover:border-rose-200 text-gray-500 hover:text-rose-500'}"
+                                   title="Lưu vào kệ sách để theo dõi">
+                                    <i class="${not empty sessionScope.wishlist[product.id] ? 'fa-solid text-rose-500' : 'fa-regular'} fa-heart text-lg"></i>
+                                </a>
+                            </div>
+                        </c:otherwise>
+                    </c:choose>
                 </form>
 
                 <div class="text-[11px] text-gray-500 bg-gray-50 p-2.5 rounded-lg flex items-center gap-2 border border-gray-100">
