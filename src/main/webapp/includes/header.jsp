@@ -41,9 +41,13 @@
 
     <!-- Khu vực Icons & Profile -->
     <div class="flex items-center gap-5 ml-6">
-        <a href="#" class="text-gray-600 hover:text-indigo-600 relative transition-colors no-underline">
+        <a href="${pageContext.request.contextPath}/wishlist" class="text-gray-600 hover:text-indigo-600 relative transition-colors no-underline" title="Kệ sách yêu thích">
             <i class="far fa-heart text-xl"></i>
-            <span class="absolute -top-1 -right-2 bg-indigo-600 text-white text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full border-2 border-white">3</span>
+            <c:if test="${not empty sessionScope.wishlist && fn:length(sessionScope.wishlist) > 0}">
+                <span class="absolute -top-1 -right-2 bg-indigo-600 text-white text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full border-2 border-white">
+                        ${fn:length(sessionScope.wishlist)}
+                </span>
+            </c:if>
         </a>
         <a href="${pageContext.request.contextPath}/cart" class="text-gray-600 hover:text-indigo-600 relative transition-colors no-underline" title="Giỏ hàng">
             <i class="fas fa-shopping-cart text-xl"></i>
