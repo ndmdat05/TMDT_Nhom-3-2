@@ -1,6 +1,6 @@
 
 package com.tmdt.controller;
-
+import org.mindrot.jbcrypt.BCrypt;
 import com.google.gson.Gson;
 import com.tmdt.Dao.OrderDao;
 import com.tmdt.Dao.ProductDao;
@@ -435,7 +435,147 @@ public class AdminManageServlet extends HttpServlet {
             String action
     ) {
 
-        if ("toggleUserStatus".equals(action)) {
+        // =========================
+        // 1. THÊM NGƯỜI DÙNG
+        // =========================
+        if ("add".equals(action)) {
+
+            String fullName = request.getParameter("fullName");
+            String username = request.getParameter("username");
+            String email = request.getParameter("email");
+            String password = request.getParameter("password");
+            String role = request.getParameter("role");
+            String status = request.getParameter("status");
+
+            if (fullName == null || fullName.isBlank()
+                    || username == null || username.isBlank()
+                    || email == null || email.isBlank()
+                    || password == null || password.length() < 8) {
+
+                session.setAttribute(
+                        "adminError",
+                        "Vui lòng nhập đầy đủ thông tin và mật khẩu ít nhất 8 ký tự."
+                );
+                return;
+            }
+
+            if (userDao.existsByUsername(username.trim())
+                    || userDao.existsByEmail(email.trim())) {
+
+                session.setAttribute(
+                        "adminError",
+                        "Username hoặc email đã tồn tại."
+                );
+                return;
+            }
+
+            String hashedPassword = BCrypt.hashpw(
+                    password,
+                    BCrypt.gensalt(12)
+            );
+
+            User user = new User(
+                    fullName.trim(),
+                    username.trim(),
+                    email.trim(),
+                    hashedPassword,
+                    role,
+                    false,
+                    "",
+                    "LOCAL",
+                    "",
+                    "",
+                    status
+            );
+
+            boolean added = userDao.addUser(user);
+
+            session.setAttribute(
+                    added ? "adminSuccess" : "adminError",
+                    added
+                            ? "Thêm người dùng thành công."
+                            : "Không thể thêm người dùng."
+            );
+
+            return;
+        }
+
+        // =========================
+        // 2. CẬP NHẬT NGƯỜI DÙNG
+        // =========================
+        if ("update".equals(action)) {
+
+            String idParam = request.getParameter("userId");
+
+            if (idParam == null || idParam.isBlank()) {
+                session.setAttribute(
+                        "adminError",
+                        "Thiếu mã người dùng."
+                );
+                return;
+            }
+
+            int userId = Integer.parseInt(idParam.trim());
+
+            User oldUser = userDao.findById(userId);
+
+            if (oldUser == null) {
+                session.setAttribute(
+                        "adminError",
+                        "Không tìm thấy người dùng."
+                );
+                return;
+            }
+
+            String fullName = request.getParameter("fullName");
+            String username = request.getParameter("username");
+            String email = request.getParameter("email");
+            String role = request.getParameter("role");
+
+            if (fullName == null || fullName.isBlank()
+                    || username == null || username.isBlank()
+                    || email == null || email.isBlank()) {
+
+                session.setAttribute(
+                        "adminError",
+                        "Vui lòng nhập đầy đủ thông tin."
+                );
+                return;
+            }
+
+            User user = new User(
+                    userId,
+                    fullName.trim(),
+                    username.trim(),
+                    email.trim(),
+                    oldUser.getHash_password(),
+                    role,
+                    oldUser.isIs_verified(),
+                    oldUser.getVerify_token(),
+                    oldUser.getAuth_provider(),
+                    oldUser.getPhone_number(),
+                    oldUser.getAddress(),
+                    oldUser.getAvatar_url(),
+                    oldUser.getStatus()
+            );
+
+            boolean updated = userDao.updateAdminUser(user);
+
+            session.setAttribute(
+                    updated ? "adminSuccess" : "adminError",
+                    updated
+                            ? "Cập nhật người dùng thành công."
+                            : "Không thể cập nhật người dùng."
+            );
+
+            return;
+        }
+
+        // =========================
+        // 3. KHÓA / MỞ KHÓA
+        // =========================
+        if ("toggleStatus".equals(action)
+                || "toggleUserStatus".equals(action)) {
 
             String idParam = request.getParameter("userId");
 
@@ -457,7 +597,43 @@ public class AdminManageServlet extends HttpServlet {
                             ? "Cập nhật trạng thái người dùng thành công."
                             : "Không thể cập nhật tài khoản này."
             );
+
+            return;
         }
+
+        // =========================
+        // 4. XÓA NGƯỜI DÙNG
+        // =========================
+        if ("delete".equals(action)) {
+
+            String idParam = request.getParameter("userId");
+
+            if (idParam == null || idParam.isBlank()) {
+                session.setAttribute(
+                        "adminError",
+                        "Thiếu mã người dùng."
+                );
+                return;
+            }
+
+            boolean deleted = userDao.deleteUser(
+                    Integer.parseInt(idParam.trim())
+            );
+
+            session.setAttribute(
+                    deleted ? "adminSuccess" : "adminError",
+                    deleted
+                            ? "Đã xóa người dùng thành công."
+                            : "Không thể xóa người dùng này."
+            );
+
+            return;
+        }
+
+        session.setAttribute(
+                "adminError",
+                "Thao tác người dùng không hợp lệ."
+        );
     }
 
     // =========================================================
