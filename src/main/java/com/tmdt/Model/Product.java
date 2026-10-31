@@ -18,6 +18,10 @@ public class Product {
     private String sellerAvatar;
     private String status;
     private String rejectionReason;
+    private String publisherName;
+    private int categories_id;
+    private String categoriesName;
+
 
     public Product() {}
     public int getId() { return id; }
@@ -95,4 +99,28 @@ public class Product {
 
     public String getImage() { return imageUrl; }
     public void setImage(String image) { this.imageUrl = image; }
+
+    public String getPublisherName() {
+        return publisherName;
+    }
+
+    public void setPublisherName(String publisherName) {
+        this.publisherName = publisherName;
+    }
+
+    public int getCategories_id() {
+        return categories_id;
+    }
+
+    public void setCategories_id(int categories_id) {
+        this.categories_id = categories_id;
+    }
+
+    public String getCategoriesName() {
+        return categoriesName;
+    }
+
+    public void setCategoriesName(String categoriesName) {
+        this.categoriesName = categoriesName;
+    }
 }

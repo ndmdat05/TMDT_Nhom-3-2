@@ -25,7 +25,7 @@
     <!-- Menu Điều hướng & Nút Đăng bài -->
     <nav class="hidden lg:flex items-center gap-6">
         <a href="${pageContext.request.contextPath}/" class="text-indigo-600 font-bold text-sm border-b-2 border-indigo-600 pb-1 no-underline">Trang chủ</a>
-        <a href="#" class="text-gray-700 font-bold text-sm hover:text-indigo-600 flex items-center gap-1 no-underline">
+        <a href="${pageContext.request.contextPath}/product-list" class="text-gray-700 font-bold text-sm hover:text-indigo-600 flex items-center gap-1 no-underline">
             Khám phá <i class="fas fa-chevron-down text-[0.6rem] text-gray-400"></i>
         </a>
         <a href="#" class="text-gray-700 font-bold text-sm hover:text-indigo-600 flex items-center gap-1 no-underline">
