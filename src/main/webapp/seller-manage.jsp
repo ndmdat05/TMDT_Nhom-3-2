@@ -1,6 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -27,18 +28,41 @@
         </div>
     </div>
 
+    <!-- 4 TAB PHÂN HỆ CHO SELLER -->
     <ul class="nav nav-tabs mb-4">
+        <!-- Tab 1: Sản phẩm -->
         <li class="nav-item">
-            <a class="nav-link ${activeTab == 'products' ? 'active fw-bold' : 'text-dark'}" href="seller-manage?action=products">Sản phẩm của tôi</a>
+            <a class="nav-link ${activeTab == 'products' ? 'active fw-bold' : 'text-dark'}"
+               href="seller-manage?action=products">
+                 Sản phẩm của tôi
+            </a>
         </li>
+        <!-- Tab 2: Đơn hàng cần xử lý -->
         <li class="nav-item">
-            <a class="nav-link ${activeTab == 'orders' ? 'active fw-bold' : 'text-dark'}" href="seller-manage?action=orders">Đơn hàng cần xử lý</a>
+            <a class="nav-link ${activeTab == 'orders' ? 'active fw-bold' : 'text-dark'}"
+               href="seller-manage?action=orders">
+                 Đơn hàng cần xử lý
+            </a>
+        </li>
+        <!-- Tab 3: Đơn hủy -->
+        <li class="nav-item">
+            <a class="nav-link ${activeTab == 'cancelled' ? 'active fw-bold text-danger' : 'text-dark'}"
+               href="seller-manage?action=cancelled">
+                 Đơn hủy
+            </a>
+        </li>
+        <!-- Tab 4: Đơn hoàn trả -->
+        <li class="nav-item">
+            <a class="nav-link ${activeTab == 'refunds' ? 'active fw-bold text-warning' : 'text-dark'}"
+               href="seller-manage?action=refunds">
+                Đơn hoàn trả
+            </a>
         </li>
     </ul>
 
     <div class="bg-white p-4 border rounded shadow-sm">
         <c:choose>
-            <%-- TAB: SẢN PHẨM --%>
+            <%-- TAB 1: SẢN PHẨM CỦA TÔI --%>
             <c:when test="${activeTab == 'products'}">
                 <table class="table table-hover align-middle">
                     <thead class="table-light">
@@ -55,16 +79,12 @@
                         <tr>
                             <td>
                                 <c:choose>
-                                    <%-- Nếu có URL ảnh được lưu trong database --%>
                                     <c:when test="${not empty p.imageUrl}">
                                         <img src="${p.imageUrl}" alt="${p.title}" class="w-[50px] h-[70px] object-cover rounded border border-gray-200" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                        <%-- Icon dự phòng: Sẽ tự động hiện lên nhờ javascript ở 'onerror' phía trên nếu link ảnh bị chết --%>
                                         <div class="w-[50px] h-[70px] bg-orange-200 rounded border border-orange-300 items-center justify-center" style="display: none;">
                                             <i class="fas fa-book text-gray-800 text-xl"></i>
                                         </div>
                                     </c:when>
-
-                                    <%-- Nếu sản phẩm hoàn toàn không có URL ảnh --%>
                                     <c:otherwise>
                                         <div class="w-[50px] h-[70px] bg-orange-200 rounded border border-orange-300 flex items-center justify-center">
                                             <i class="fas fa-book text-gray-800 text-xl"></i>
@@ -84,12 +104,10 @@
                                 </c:choose>
                             </td>
                             <td class="text-end">
-                                <!-- Nút Sửa -->
                                 <a href="seller-manage?action=edit&id=${p.id}" class="btn btn-sm btn-outline-primary">
                                     <i class="fas fa-edit"></i> Sửa
                                 </a>
 
-                                <!-- Nút Ẩn/Hiện -->
                                 <form action="seller-manage" method="post" style="display:inline;">
                                     <input type="hidden" name="action" value="toggle-status">
                                     <input type="hidden" name="id" value="${p.id}">
@@ -99,7 +117,6 @@
                                     </button>
                                 </form>
 
-                                <!-- Nút XÓA MỀM -->
                                 <form action="seller-manage" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc muốn xóa sản phẩm này?');">
                                     <input type="hidden" name="action" value="delete">
                                     <input type="hidden" name="id" value="${p.id}">
@@ -119,8 +136,8 @@
                 </table>
             </c:when>
 
-            <%-- TAB: ĐƠN HÀNG --%>
-            <c:when test="${activeTab == 'orders'}">
+            <%-- TAB 2, 3, 4: CÁC TAB ĐƠN HÀNG (CÓ NÚT XEM CHI TIẾT ĐỂ SET TRẠNG THÁI) --%>
+            <c:when test="${activeTab == 'orders' or activeTab == 'cancelled' or activeTab == 'refunds'}">
                 <table class="table table-hover align-middle">
                     <thead class="table-light">
                     <tr>
@@ -129,25 +146,53 @@
                         <th>Sản phẩm</th>
                         <th>Tổng tiền</th>
                         <th>Trạng thái</th>
+                        <th class="text-end">Thao tác</th>
                     </tr>
                     </thead>
                     <tbody>
                     <c:forEach var="o" items="${sellerOrders}">
                         <tr>
-                            <td class="fw-bold">#ORD-${o.id}</td>
-                            <td>${o.buyerName}</td>
+                            <td class="fw-bold">#ORD-${not empty o.orderCode ? o.orderCode : o.id}</td>
+                            <td>${not empty o.receiverName ? o.receiverName : o.buyerName}</td>
                             <td>${o.productTitle}</td>
                             <td class="text-danger fw-semibold">
                                 <fmt:formatNumber value="${o.totalAmount}" pattern="#,###"/> đ
                             </td>
                             <td>
-                                <span class="badge ${o.status == 'PENDING' ? 'bg-warning text-dark' : 'bg-primary'}">${o.status}</span>
+                                <c:choose>
+                                    <c:when test="${o.status == 'PENDING'}">
+                                        <span class="badge bg-warning text-dark"> PENDING</span>
+                                    </c:when>
+                                    <c:when test="${o.status == 'CONFIRMED'}">
+                                        <span class="badge bg-primary"> CONFIRMED</span>
+                                    </c:when>
+                                    <c:when test="${o.status == 'SHIPPING'}">
+                                        <span class="badge bg-info text-dark"> SHIPPING</span>
+                                    </c:when>
+                                    <c:when test="${o.status == 'COMPLETED'}">
+                                        <span class="badge bg-success"> COMPLETED</span>
+                                    </c:when>
+                                    <c:when test="${o.status == 'CANCELLED'}">
+                                        <span class="badge bg-danger"> CANCELLED</span>
+                                    </c:when>
+                                    <c:otherwise>
+                                        <span class="badge bg-secondary">${o.status}</span>
+                                    </c:otherwise>
+                                </c:choose>
+                            </td>
+                            <td class="text-end">
+                                <a href="seller-order-detail?id=${o.id}" class="btn btn-sm btn-outline-danger fw-semibold">
+                                    <i class="fas fa-eye me-1"></i> Xem chi tiết
+                                </a>
                             </td>
                         </tr>
                     </c:forEach>
                     <c:if test="${empty sellerOrders}">
                         <tr>
-                            <td colspan="5" class="text-center text-muted py-4">Chưa có đơn hàng nào.</td>
+                            <td colspan="6" class="text-center text-muted py-5">
+                                <i class="fas fa-box-open fa-2x mb-2 text-secondary"></i>
+                                <div>Chưa có đơn hàng nào trong danh mục này.</div>
+                            </td>
                         </tr>
                     </c:if>
                     </tbody>

@@ -2,6 +2,8 @@ package com.tmdt.controller;
 
 import com.tmdt.Dao.OrderDao;
 import com.tmdt.Model.Cart;
+import com.tmdt.Model.CartItem;
+import com.tmdt.Model.Product;
 import com.tmdt.Model.User;
 import com.tmdt.untils.VnpayConfig;
 import jakarta.servlet.ServletException;
@@ -66,15 +68,30 @@ public class VNPayReturnController extends HttpServlet {
             // ==========================================
             Cart cart = (Cart) session.getAttribute("cart");
             User user = (User) session.getAttribute("user");
+            if (user == null) {
+                user = (User) session.getAttribute("account");
+            }
             String receiverName = (String) session.getAttribute("order_name");
             String receiverPhone = (String) session.getAttribute("order_phone");
             String address = (String) session.getAttribute("order_address");
 
             if (cart != null) {
+                // Tự động quét giỏ hàng để lấy đúng ID của người bán
+                int sellerId = 1;
+                if (cart.getItems() != null) {
+                    for (CartItem item : cart.getItems()) {
+                        Product p = item.getProduct();
+                        if (p != null && p.getSellerId() > 0) {
+                            sellerId = p.getSellerId();
+                            break;
+                        }
+                    }
+                }
+
                 OrderDao orderDao = new OrderDao();
                 orderDao.createOrder(
                         user != null ? user.getId() : 1,
-                        2, // seller_id mặc định
+                        sellerId, // <-- ĐÃ SỬA: Lấy đúng ID người bán thay vì cố định số 2
                         receiverName,
                         receiverPhone,
                         address,
@@ -82,10 +99,10 @@ public class VNPayReturnController extends HttpServlet {
                         "ONLINE",
                         "PAID",
                         orderCode,
-                        cart // <--- THÊM BIẾN CART VÀO ĐÂY
+                        cart
                 );
 
-                // Xóa giỏ hàng và dữ liệu đặt hàng trong session
+                // Xóa giỏ hàng và dữ liệu đặt hàng trong session sau khi đã lưu xong
                 session.removeAttribute("cart");
                 session.removeAttribute("order_name");
                 session.removeAttribute("order_phone");
@@ -100,4 +117,5 @@ public class VNPayReturnController extends HttpServlet {
         } else {
             request.getRequestDispatcher("/order-failed.jsp").forward(request, response);
         }
-    }}
+    }
+}

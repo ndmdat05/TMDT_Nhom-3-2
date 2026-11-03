@@ -16,7 +16,7 @@ import java.util.List;
 
 @WebServlet(name = "OrderDetailController", urlPatterns = {"/order-detail"})
 public class OrderDetailController extends HttpServlet {
-
+    private final OrderDao orderDao = new OrderDao();
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -53,5 +53,45 @@ public class OrderDetailController extends HttpServlet {
         } catch (NumberFormatException e) {
             response.sendRedirect(request.getContextPath() + "/my-orders");
         }
+    }
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        request.setCharacterEncoding("UTF-8");
+
+        HttpSession session = request.getSession();
+        User user = (User) session.getAttribute("user");
+        if (user == null) {
+            user = (User) session.getAttribute("account");
+        }
+
+        if (user == null) {
+            response.sendRedirect(request.getContextPath() + "/login.jsp");
+            return;
+        }
+
+        String action = request.getParameter("action");
+        String orderIdRaw = request.getParameter("orderId");
+
+        if ("cancel".equalsIgnoreCase(action) && orderIdRaw != null && !orderIdRaw.trim().isEmpty()) {
+            try {
+                int orderId = Integer.parseInt(orderIdRaw.trim());
+
+                // Xác thực đơn hàng thuộc về đúng Buyer và vẫn đang ở trạng thái PENDING
+                Order order = orderDao.getOrderById(orderId, user.getId());
+                if (order != null && "PENDING".equalsIgnoreCase(order.getStatus())) {
+                    orderDao.updateOrderStatus(orderId, "CANCELLED");
+                }
+
+                // Tải lại trang chi tiết để hiển thị banner đã hủy
+                response.sendRedirect(request.getContextPath() + "/order-detail?id=" + orderId);
+                return;
+
+            } catch (NumberFormatException e) {
+                e.printStackTrace();
+            }
+        }
+
+        response.sendRedirect(request.getContextPath() + "/my-orders");
     }
 }
