@@ -1,6 +1,8 @@
 package com.tmdt.controller;
 
+import com.tmdt.Dao.CommentDao;
 import com.tmdt.Dao.ProductDao;
+import com.tmdt.Model.Comment;
 import com.tmdt.Model.Product;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -14,6 +16,8 @@ import java.util.List;
 public class ProductDetailController extends HttpServlet {
 
     private ProductDao productDao = new ProductDao();
+    private CommentDao commentDao = new CommentDao();
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -34,6 +38,16 @@ public class ProductDetailController extends HttpServlet {
                 return;
             }
             List<Product> relatedProducts = productDao.getTopNewProducts(4);
+
+            List<Comment> comments = commentDao.getCommentsByProduct(productId);
+            request.setAttribute("comments", comments);
+            request.setAttribute("commentCount", commentDao.countByProduct(productId));
+
+            jakarta.servlet.http.HttpSession session = request.getSession();
+            request.setAttribute("commentFlash", session.getAttribute("commentFlash"));
+            request.setAttribute("commentFlashType", session.getAttribute("commentFlashType"));
+            session.removeAttribute("commentFlash");
+            session.removeAttribute("commentFlashType");
 
             request.setAttribute("product", product);
             request.setAttribute("relatedProducts", relatedProducts);
