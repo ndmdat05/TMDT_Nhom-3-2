@@ -27,22 +27,40 @@
 
 <main class="container mx-auto px-4 md:px-8 max-w-5xl my-10 flex-grow">
 
-    <!-- BREADCRUMB & QUAY LẠI (TĂNG NHẸ SIZE CHỮ) -->
+    <!-- BREADCRUMB & QUAY LẠI -->
     <div class="flex items-center justify-between mb-6">
         <nav class="flex text-sm text-gray-500 gap-2 items-center">
             <a href="${pageContext.request.contextPath}/" class="hover:text-indigo-600 transition">Trang chủ</a>
             <span>/</span>
             <a href="${pageContext.request.contextPath}/my-orders" class="hover:text-indigo-600 transition">Lịch sử đơn hàng</a>
             <span>/</span>
-            <span class="text-gray-900 font-semibold">Chi tiết #${order.orderCode}</span>
+            <span class="text-gray-900 font-semibold">Chi tiết #${not empty order.orderCode ? order.orderCode : order.id}</span>
         </nav>
         <a href="${pageContext.request.contextPath}/my-orders" class="text-sm text-indigo-600 hover:text-indigo-800 font-semibold inline-flex items-center gap-1.5 transition">
             <i class="fas fa-arrow-left text-xs"></i> Quay lại danh sách
         </a>
     </div>
 
-    <!-- KHỐI 1: HEADER ĐƠN HÀNG + THANH STEPPER TIẾN TRÌNH -->
+    <!-- KHỐI 1: HEADER ĐƠN HÀNG + STEPPER + DANH SÁCH MÓN HÀNG -->
     <div class="bg-white rounded-2xl border border-gray-200/80 p-6 md:p-8 shadow-sm mb-8">
+
+        <!-- BANNER BÁO ĐƠN ĐÃ HỦY (CHỈ HIỆN KHI ĐƠN BỊ CANCELLED) -->
+        <c:if test="${order.status eq 'CANCELLED'}">
+            <div class="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-3">
+                <i class="fas fa-circle-exclamation text-rose-500 text-lg mt-0.5"></i>
+                <div class="text-sm">
+                    <h4 class="font-bold text-rose-800">Đơn hàng này đã bị hủy</h4>
+                    <p class="text-rose-600 mt-0.5">
+                        Lý do: <span class="font-medium">${not empty cancelReason ? cancelReason : 'Đơn hàng đã được hủy theo yêu cầu hoặc do sự cố kho.'}</span>
+                    </p>
+                    <p class="text-xs text-rose-500 mt-1">
+                        Hình thức: <b class="uppercase">${not empty order.paymentMethod ? order.paymentMethod : 'COD'}</b> |
+                        Hoàn tiền: <span class="font-semibold text-rose-700">${order.paymentStatus eq 'REFUNDED' ? 'Đã hoàn tiền' : (order.paymentMethod eq 'ONLINE' ? 'Đang hoàn tiền' : 'Không phát sinh')}</span>
+                    </p>
+                </div>
+            </div>
+        </c:if>
+
         <div class="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-gray-100">
             <div>
                 <div class="flex items-center gap-3 mb-1.5">
@@ -69,15 +87,28 @@
                     </c:choose>
                 </div>
                 <p class="text-sm text-gray-500">
-                    Đặt lúc: <fmt:formatDate value="${order.createdAt}" pattern="HH:mm, dd/MM/yyyy"/>
+                    Đặt lúc: <span class="font-medium text-gray-700">${not empty order.createdAt ? order.createdAt : 'Vừa xong'}</span>
                     <c:if test="${not empty order.estimatedDelivery}">
-                        <span class="mx-1 text-gray-300">|</span> Dự kiến: <fmt:formatDate value="${order.estimatedDelivery}" pattern="dd/MM/yyyy"/>
+                        <span class="mx-1 text-gray-300">|</span> Dự kiến: <span class="font-medium text-gray-700">${order.estimatedDelivery}</span>
                     </c:if>
                 </p>
             </div>
 
-            <!-- Nút Action góc trên -->
+            <!-- CỤM NÚT ACTION CHO BUYER: NÚT HỦY LUÔN HIỆN KHI ĐƠN PENDING -->
             <div class="flex items-center gap-3">
+                <c:if test="${order.status == 'PENDING'}">
+                    <form method="post" action="${pageContext.request.contextPath}/order-detail"
+                          onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này?');"
+                          style="display: inline;">
+                        <input type="hidden" name="action" value="cancel">
+                        <input type="hidden" name="orderId" value="${order.id}">
+                        <button type="submit"
+                                class="px-4 py-2.5 border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl text-sm font-semibold transition inline-flex items-center gap-1.5 shadow-sm">
+                            <i class="fas fa-ban text-xs"></i> Hủy đơn hàng
+                        </button>
+                    </form>
+                </c:if>
+
                 <a href="${pageContext.request.contextPath}/" class="px-4 py-2.5 border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl text-sm font-semibold transition">
                     Mua lại
                 </a>
@@ -87,7 +118,7 @@
             </div>
         </div>
 
-        <!-- STEPPER TIẾN TRÌNH (TĂNG KÍCH THƯỚC NÚT TRÒN & CỠ CHỮ) -->
+        <!-- STEPPER TIẾN TRÌNH -->
         <c:set var="st" value="${order.status}" />
         <c:set var="stepNum" value="${st eq 'PENDING' ? 1 : (st eq 'CONFIRMED' ? 2 : (st eq 'SHIPPING' ? 3 : (st eq 'COMPLETED' ? 4 : 0)))}" />
 
@@ -103,7 +134,7 @@
                         <span class="w-3 h-3 rounded-full ${stepNum >= 1 ? 'bg-blue-600' : 'bg-transparent'}"></span>
                     </div>
                     <span class="text-sm font-bold mt-2 text-gray-800">Đã đặt hàng</span>
-                    <span class="text-xs text-gray-400 mt-0.5"><fmt:formatDate value="${order.createdAt}" pattern="dd/MM • HH:mm"/></span>
+                    <span class="text-xs text-gray-400 mt-0.5">${not empty order.createdAt ? order.createdAt : ''}</span>
                 </div>
 
                 <div class="relative z-10 flex flex-col items-center">
@@ -129,9 +160,7 @@
                     <span class="text-sm font-bold mt-2 ${stepNum eq 4 ? 'text-gray-800' : 'text-gray-400'}">Đã giao hàng</span>
                     <span class="text-xs text-gray-400 mt-0.5">
                         <c:choose>
-                            <c:when test="${not empty order.estimatedDelivery}">
-                                Dự kiến <fmt:formatDate value="${order.estimatedDelivery}" pattern="dd/MM"/>
-                            </c:when>
+                            <c:when test="${not empty order.estimatedDelivery}">${order.estimatedDelivery}</c:when>
                             <c:otherwise>Hoàn tất</c:otherwise>
                         </c:choose>
                     </span>
@@ -139,14 +168,13 @@
             </div>
         </div>
 
-        <!-- DANH SÁCH SẢN PHẨM MUA (ẢNH BÌA VÀ CHỮ RÕ RÀNG HƠN) -->
+        <!-- BẢNG SẢN PHẨM TRONG ĐƠN -->
         <div class="mt-4 pt-6 border-t border-gray-100">
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-sm">
                     <thead>
                     <tr class="text-gray-400 uppercase tracking-wider font-semibold border-b border-gray-100 text-xs">
                         <th class="pb-3.5">SẢN PHẨM</th>
-                        <th class="pb-3.5 text-right">ĐƠN GIÁ</th>
                         <th class="pb-3.5 text-right">THÀNH TIỀN</th>
                     </tr>
                     </thead>
@@ -169,9 +197,6 @@
                                                 <p class="text-gray-400 text-xs mt-1">Số lượng: x${item.quantity}</p>
                                             </div>
                                         </div>
-                                    </td>
-                                    <td class="py-4 text-right text-gray-600 font-medium text-sm md:text-base">
-                                        <fmt:formatNumber value="${item.unitPrice}" type="currency" currencySymbol="₫" maxFractionDigits="0"/>
                                     </td>
                                     <td class="py-4 text-right font-bold text-gray-900 text-sm md:text-base">
                                         <fmt:formatNumber value="${item.totalPrice}" type="currency" currencySymbol="₫" maxFractionDigits="0"/>
@@ -207,8 +232,17 @@
                 </table>
             </div>
 
-            <!-- TỔNG KẾT TIỀN -->
-            <div class="border-t border-gray-100 pt-5 flex justify-end">
+            <!-- TỔNG KẾT TIỀN & THÔNG TIN THANH TOÁN -->
+            <div class="border-t border-gray-100 pt-5 flex flex-wrap justify-between items-start gap-4">
+                <div class="text-xs text-gray-500 space-y-1">
+                    <p>Hình thức: <span class="font-semibold text-gray-800 uppercase">${not empty order.paymentMethod ? order.paymentMethod : 'COD'}</span></p>
+                    <p>Thanh toán:
+                        <span class="font-semibold ${order.paymentStatus eq 'PAID' ? 'text-emerald-600' : (order.paymentStatus eq 'REFUNDED' ? 'text-rose-600' : 'text-amber-600')}">
+                            ${order.paymentStatus eq 'PAID' ? 'Đã thanh toán' : (order.paymentStatus eq 'REFUNDED' ? 'Đã hoàn tiền' : 'Chưa thanh toán')}
+                        </span>
+                    </p>
+                </div>
+
                 <div class="w-72 space-y-2.5 text-sm">
                     <div class="flex justify-between text-gray-500">
                         <span>Tạm tính</span>
@@ -231,7 +265,7 @@
         </div>
     </div>
 
-    <!-- KHỐI 2: 4 CARD NGHIỆP VỤ (ĐÃ XÓA 2 KHỐI THEO YÊU CẦU & TĂNG SIZE CHỮ) -->
+    <!-- KHỐI 2: 4 CARD NGHIỆP VỤ CHO BUYER -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
         <!-- CARD 1: THÔNG TIN GIAO NHẬN -->
@@ -258,7 +292,7 @@
             </div>
         </div>
 
-        <!-- CARD 2: NGHIỆM THU / KIỂM TRA HÀNG (ĐÃ XÓA THANH BẢO CHỨNG ESCROW) -->
+        <!-- CARD 2: NGHIỆM THU / KIỂM TRA HÀNG -->
         <div class="bg-white rounded-2xl border border-gray-200/80 p-6 md:p-7 shadow-sm">
             <h3 class="font-bold text-base text-gray-900 mb-1">Nghiệm thu / Kiểm tra hàng</h3>
             <p class="text-xs text-gray-400 mb-4">Vui lòng kiểm tra sản phẩm cẩn thận trước khi nhận hàng.</p>
@@ -278,7 +312,7 @@
             </div>
         </div>
 
-        <!-- CARD 3: KHIẾU NẠI / ĐỔI TRẢ (ĐÃ XÓA THANH CẢNH BÁO 24H) -->
+        <!-- CARD 3: KHIẾU NẠI / ĐỔI TRẢ -->
         <div class="bg-white rounded-2xl border border-gray-200/80 p-6 md:p-7 shadow-sm flex flex-col justify-between">
             <div>
                 <h3 class="font-bold text-base text-gray-900 mb-1">Khiếu nại / Đổi trả</h3>
@@ -320,7 +354,6 @@
                 <h3 class="font-bold text-base text-gray-900 mb-1">Đánh giá đơn hàng</h3>
                 <p class="text-xs text-gray-400 mb-3 text-center">Trải nghiệm của bạn thế nào?</p>
 
-                <!-- Sao đánh giá (tăng kích thước để dễ click) -->
                 <div class="flex justify-center gap-2 text-amber-400 text-2xl mb-4 cursor-pointer">
                     <i class="fas fa-star"></i>
                     <i class="fas fa-star"></i>

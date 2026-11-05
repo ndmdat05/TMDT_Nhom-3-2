@@ -17,7 +17,8 @@ public class Order {
     private Timestamp createdAt;
     private String receiverName;
     private String receiverPhone;
-
+    private String paymentMethod;
+    private String paymentStatus;
     public Order() {}
 
     // Constructor cũ (giữ nguyên để tránh lỗi code cũ)
@@ -46,6 +47,24 @@ public class Order {
         this.shippingAddress = shippingAddress;
         this.estimatedDelivery = estimatedDelivery;
         this.createdAt = createdAt;
+    }
+
+    public Order(int id, String orderCode, String productTitle, String buyerName, String sellerName, double totalAmount, String status, String trackingNumber, String shippingAddress, Date estimatedDelivery, Timestamp createdAt, String receiverName, String receiverPhone, String paymentMethod, String paymentStatus) {
+        this.id = id;
+        this.orderCode = orderCode;
+        this.productTitle = productTitle;
+        this.buyerName = buyerName;
+        this.sellerName = sellerName;
+        this.totalAmount = totalAmount;
+        this.status = status;
+        this.trackingNumber = trackingNumber;
+        this.shippingAddress = shippingAddress;
+        this.estimatedDelivery = estimatedDelivery;
+        this.createdAt = createdAt;
+        this.receiverName = receiverName;
+        this.receiverPhone = receiverPhone;
+        this.paymentMethod = paymentMethod;
+        this.paymentStatus = paymentStatus;
     }
 
     public int getId() { return id; }
@@ -85,5 +104,21 @@ public class Order {
 
     public void setReceiverPhone(String receiverPhone) {
         this.receiverPhone = receiverPhone;
+    }
+
+    public String getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    public String getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(String paymentMethod) {
+        this.paymentMethod = paymentMethod;
+    }
+
+    public void setPaymentStatus(String paymentStatus) {
+        this.paymentStatus = paymentStatus;
     }
 }

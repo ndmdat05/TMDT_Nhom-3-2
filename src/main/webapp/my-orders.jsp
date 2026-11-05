@@ -43,10 +43,11 @@
     <!-- LƯỚI 4 CỘT: 1 CỘT CHO SIDEBAR + 3 CỘT CHO NỘI DUNG -->
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8 items-start">
 
-        <!-- 1. SIDEBAR BÊN TRÁI (GIỮ NGUYÊN FORM CHUẨN) -->
+        <!-- 1. SIDEBAR BÊN TRÁI (ĐÃ CẬP NHẬT PHÂN HỆ QUẢN LÝ SHOP) -->
         <aside class="lg:col-span-1">
-            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center sticky top-6">
-                <div class="relative w-24 h-24 mx-auto mb-4">
+            <div class="bg-white rounded-2xl p-5 md:p-6 shadow-sm border border-gray-100 text-center sticky top-6">
+                <!-- AVATAR -->
+                <div class="relative w-20 h-20 md:w-24 md:h-24 mx-auto mb-3.5">
                     <c:choose>
                         <c:when test="${not empty user.avatar_url}">
                             <img src="${user.avatar_url}" alt="Avatar" class="w-full h-full rounded-full object-cover border-4 border-indigo-50 shadow">
@@ -57,37 +58,48 @@
                             </div>
                         </c:otherwise>
                     </c:choose>
-                    <span class="absolute bottom-1 right-1 w-5 h-5 bg-emerald-500 border-2 border-white rounded-full" title="Đang hoạt động"></span>
+                    <span class="absolute bottom-1 right-1 w-4 h-4 md:w-5 md:h-5 bg-emerald-500 border-2 border-white rounded-full" title="Đang hoạt động"></span>
                 </div>
 
-                <h2 class="text-lg font-bold text-gray-900 truncate">${displayName}</h2>
-                <p class="text-xs text-gray-500 mb-3 truncate">@${not empty user.username ? user.username : 'mangavault_user'}</p>
+                <h2 class="text-base md:text-lg font-bold text-gray-900 truncate">${displayName}</h2>
+                <p class="text-xs text-gray-500 mb-2.5 truncate">@${not empty user.username ? user.username : 'mangavault_user'}</p>
 
-                <div class="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-700">
-                    <i class="fas fa-user mr-1"></i>
+                <!-- HUY HIỆU ROLE -->
+                <div class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-full
+                    ${user.role eq 'ADMIN' ? 'bg-purple-100 text-purple-700' : (user.role eq 'SELLER' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700')}">
+                    <i class="fas ${user.role eq 'ADMIN' ? 'fa-shield-halved' : (user.role eq 'SELLER' ? 'fa-store' : 'fa-user')} text-[10px]"></i>
                     ${not empty user.role ? user.role : 'BUYER'}
                 </div>
 
-                <hr class="my-6 border-gray-100">
-                <nav class="space-y-1 text-left">
-                    <a href="${pageContext.request.contextPath}/profile" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-gray-600 hover:bg-gray-50 hover:text-indigo-600 font-medium text-sm transition-colors">
-                        <i class="fas fa-user-circle w-5"></i> Hồ sơ cá nhân
+                <hr class="my-5 border-gray-100">
+
+                <nav class="space-y-1 text-left text-sm">
+                    <!-- NHÓM 1: CÁ NHÂN & MUA SẮM (BUYER) -->
+                    <a href="${pageContext.request.contextPath}/profile" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-gray-600 hover:bg-gray-50 hover:text-indigo-600 font-medium transition-colors">
+                        <i class="fas fa-user-circle w-4 text-center"></i> Hồ sơ cá nhân
                     </a>
+
                     <!-- Mục đang chọn: Đơn hàng của tôi -->
-                    <a href="${pageContext.request.contextPath}/my-orders" class="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-indigo-50 text-indigo-600 font-semibold text-sm">
-                        <i class="fas fa-shopping-bag w-5"></i> Đơn hàng của tôi
+                    <a href="${pageContext.request.contextPath}/my-orders" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-indigo-50 text-indigo-600 font-bold transition-colors">
+                        <i class="fas fa-shopping-bag w-4 text-center"></i> Đơn hàng của tôi
                     </a>
-                    <a href="${pageContext.request.contextPath}/change-password" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-gray-600 hover:bg-gray-50 hover:text-indigo-600 font-medium text-sm transition-colors">
-                        <i class="fas fa-key w-5"></i> Đổi mật khẩu
-                    </a>
-                    <c:if test="${user.role eq 'ADMIN'}">
-                        <a href="${pageContext.request.contextPath}/dashboard" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-purple-600 hover:bg-purple-50 font-semibold text-sm transition-colors">
-                            <i class="fas fa-chart-line w-5"></i> Trang quản trị
+
+                    <!-- NHÓM 3: HỆ THỐNG & TÀI KHOẢN -->
+                    <div class="pt-3 mt-3 border-t border-gray-100 space-y-1">
+                        <a href="${pageContext.request.contextPath}/change-password" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-gray-600 hover:bg-gray-50 hover:text-indigo-600 font-medium transition-colors">
+                            <i class="fas fa-key w-4 text-center"></i> Đổi mật khẩu
                         </a>
-                    </c:if>
-                    <a href="${pageContext.request.contextPath}/logout" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-rose-600 hover:bg-rose-50 font-semibold text-sm transition-colors">
-                        <i class="fas fa-sign-out-alt w-5"></i> Đăng xuất
-                    </a>
+
+                        <c:if test="${user.role eq 'ADMIN'}">
+                            <a href="${pageContext.request.contextPath}/dashboard" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-purple-600 hover:bg-purple-50 font-semibold transition-colors">
+                                <i class="fas fa-chart-line w-4 text-center"></i> Trang quản trị
+                            </a>
+                        </c:if>
+
+                        <a href="${pageContext.request.contextPath}/logout" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-rose-600 hover:bg-rose-50 font-semibold transition-colors">
+                            <i class="fas fa-sign-out-alt w-4 text-center"></i> Đăng xuất
+                        </a>
+                    </div>
                 </nav>
             </div>
         </aside>
@@ -117,7 +129,7 @@
                 </c:when>
 
                 <c:otherwise>
-                    <!-- THẺ 1: TIẾN TRÌNH ĐƠN HÀNG GẦN NHẤT (CARD TRACKING STEPPER) -->
+                    <!-- THẺ 1: TIẾN TRÌNH ĐƠN HÀNG GẦN NHẤT -->
                     <c:if test="${not empty latestOrder}">
                         <div class="bg-white rounded-2xl border border-gray-100 p-5 md:p-6 shadow-sm">
                             <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-gray-100">
@@ -149,20 +161,17 @@
                                 </div>
                             </div>
 
-                            <!-- STEPPER RÚT GỌN GỌN GÀNG CHO CỘT 3/4 -->
+                            <!-- STEPPER -->
                             <c:set var="st" value="${latestOrder.status}" />
                             <c:set var="stepNum" value="${st eq 'PENDING' ? 1 : (st eq 'CONFIRMED' ? 2 : (st eq 'SHIPPING' ? 3 : (st eq 'COMPLETED' ? 4 : 0)))}" />
 
                             <div class="py-6 px-2">
                                 <div class="relative flex items-center justify-between max-w-2xl mx-auto">
-                                    <!-- Đường kết nối xám -->
                                     <div class="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-gray-200 z-0"></div>
-                                    <!-- Đường kết nối xanh (chạy theo tiến độ) -->
                                     <div class="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-indigo-600 transition-all duration-500 z-0"
                                          style="width: ${stepNum eq 1 ? '10%' : (stepNum eq 2 ? '38%' : (stepNum eq 3 ? '72%' : (stepNum eq 4 ? '100%' : '0%')))}">
                                     </div>
 
-                                    <!-- BƯỚC 1: ĐÃ ĐẶT HÀNG -->
                                     <div class="relative z-10 flex flex-col items-center">
                                         <div class="w-6 h-6 rounded-full flex items-center justify-center border-2 bg-white ${stepNum >= 1 ? 'border-indigo-600' : 'border-gray-300'}">
                                             <span class="w-2 h-2 rounded-full ${stepNum >= 1 ? 'bg-indigo-600' : 'bg-transparent'}"></span>
@@ -173,7 +182,6 @@
                                         </span>
                                     </div>
 
-                                    <!-- BƯỚC 2: ĐANG XỬ LÝ -->
                                     <div class="relative z-10 flex flex-col items-center">
                                         <div class="w-6 h-6 rounded-full flex items-center justify-center border-2 bg-white ${stepNum >= 2 ? 'border-indigo-600' : 'border-gray-300'}">
                                             <span class="w-2 h-2 rounded-full ${stepNum >= 2 ? 'bg-indigo-600' : 'bg-transparent'}"></span>
@@ -182,7 +190,6 @@
                                         <span class="text-[10px] text-gray-400">${stepNum >= 2 ? 'Đã duyệt' : 'Chờ shop'}</span>
                                     </div>
 
-                                    <!-- BƯỚC 3: ĐÃ GIAO VẬN -->
                                     <div class="relative z-10 flex flex-col items-center">
                                         <div class="w-6 h-6 rounded-full flex items-center justify-center border-2 bg-white ${stepNum >= 3 ? 'border-indigo-600 bg-indigo-600' : 'border-gray-300'}">
                                             <span class="w-2 h-2 rounded-full ${stepNum >= 3 ? 'bg-white' : 'bg-transparent'}"></span>
@@ -193,7 +200,6 @@
                                         </span>
                                     </div>
 
-                                    <!-- BƯỚC 4: ĐÃ GIAO HÀNG -->
                                     <div class="relative z-10 flex flex-col items-center">
                                         <div class="w-6 h-6 rounded-full flex items-center justify-center border-2 bg-white ${stepNum eq 4 ? 'border-indigo-600 bg-indigo-600' : 'border-gray-300'}">
                                             <span class="w-2 h-2 rounded-full ${stepNum eq 4 ? 'bg-white' : 'bg-transparent'}"></span>
@@ -219,7 +225,7 @@
                         </div>
                     </c:if>
 
-                    <!-- THẺ 2: BẢNG LỊCH SỬ ĐƠN HÀNG (CÓ TÌM KIẾM & BỘ LỌC) -->
+                    <!-- THẺ 2: BẢNG LỊCH SỬ ĐƠN HÀNG -->
                     <div class="bg-white rounded-2xl border border-gray-100 p-5 md:p-6 shadow-sm">
 
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-gray-100">
@@ -229,7 +235,6 @@
                             </div>
 
                             <div class="flex items-center gap-2">
-                                <!-- Ô NHẬP TÌM MÃ ĐƠN -->
                                 <div class="relative">
                                     <input type="text" id="orderSearchInput" onkeyup="filterOrders()"
                                            placeholder="Nhập mã đơn"
@@ -237,7 +242,6 @@
                                     <i class="fas fa-search absolute right-2.5 top-2.5 text-gray-400 text-xs pointer-events-none"></i>
                                 </div>
 
-                                <!-- DROPDOWN LỌC TRẠNG THÁI -->
                                 <select id="orderStatusFilter" onchange="filterOrders()"
                                         class="text-xs border border-gray-200 rounded-xl px-2.5 py-1.5 bg-gray-50/50 text-gray-700 focus:outline-none focus:ring-1 focus:ring-indigo-500">
                                     <option value="ALL">Tất cả đơn hàng</option>
@@ -277,29 +281,29 @@
                                         <td class="py-3.5 px-2">
                                             <c:choose>
                                                 <c:when test="${o.status eq 'PENDING'}">
-                                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-600">
-                                                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Chờ xử lý
-                                                        </span>
+                                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-600">
+                                                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Chờ xử lý
+                                                    </span>
                                                 </c:when>
                                                 <c:when test="${o.status eq 'CONFIRMED'}">
-                                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-blue-50 text-blue-600">
-                                                            <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Đang xử lý
-                                                        </span>
+                                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-blue-50 text-blue-600">
+                                                        <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Đang xử lý
+                                                    </span>
                                                 </c:when>
                                                 <c:when test="${o.status eq 'SHIPPING'}">
-                                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-indigo-50 text-indigo-600">
-                                                            <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span> Đang giao vận
-                                                        </span>
+                                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-indigo-50 text-indigo-600">
+                                                        <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span> Đang giao vận
+                                                    </span>
                                                 </c:when>
                                                 <c:when test="${o.status eq 'COMPLETED'}">
-                                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-600">
-                                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Hoàn tất
-                                                        </span>
+                                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-600">
+                                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Hoàn tất
+                                                    </span>
                                                 </c:when>
                                                 <c:otherwise>
-                                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-rose-50 text-rose-600">
-                                                            <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Đã hủy
-                                                        </span>
+                                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-rose-50 text-rose-600">
+                                                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Đã hủy
+                                                    </span>
                                                 </c:otherwise>
                                             </c:choose>
                                         </td>
@@ -324,7 +328,6 @@
 
 <jsp:include page="/includes/footer.jsp" />
 
-<!-- SCRIPT LỌC BẢNG NHANH THEO MÃ ĐƠN VÀ TRẠNG THÁI -->
 <script>
     function filterOrders() {
         const searchInput = document.getElementById('orderSearchInput').value.toLowerCase().trim();

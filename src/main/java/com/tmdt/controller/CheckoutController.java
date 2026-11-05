@@ -2,6 +2,8 @@ package com.tmdt.controller;
 
 import com.tmdt.Dao.OrderDao;
 import com.tmdt.Model.Cart;
+import com.tmdt.Model.CartItem;
+import com.tmdt.Model.Product;
 import com.tmdt.Model.User;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -27,6 +29,9 @@ public class CheckoutController extends HttpServlet {
         }
 
         User user = (User) session.getAttribute("user");
+        if (user == null) {
+            user = (User) session.getAttribute("account");
+        }
         if (user == null) {
             response.sendRedirect(request.getContextPath() + "/login.jsp");
             return;
@@ -55,6 +60,7 @@ public class CheckoutController extends HttpServlet {
         String receiverName = request.getParameter("receiverName");
         String receiverPhone = request.getParameter("receiverPhone");
         String shippingAddress = request.getParameter("shippingAddress");
+
         // Mã đơn hàng định dạng chữ và số liền nhau
         int randomNum = (int) (100000 + Math.random() * 900000);
         String orderCode = "MGV" + randomNum;
@@ -70,19 +76,36 @@ public class CheckoutController extends HttpServlet {
         if ("ONLINE".equalsIgnoreCase(paymentMethod)) {
             response.sendRedirect(request.getContextPath() + "/vnpay-payment");
         } else {
-            // Luồng COD: Ghi ngay vào DB (payment_status phải là 'PENDING' để không lỗi check constraint)
+            // Luồng COD: Ghi ngay vào DB
             User user = (User) session.getAttribute("user");
+            if (user == null) {
+                user = (User) session.getAttribute("account");
+            }
 
             // Ưu tiên lấy receiverName nếu form checkout có gửi, không thì dùng fullName
             String finalReceiver = (receiverName != null && !receiverName.trim().isEmpty()) ? receiverName : fullName;
             String finalPhone = (receiverPhone != null && !receiverPhone.trim().isEmpty()) ? receiverPhone : phone;
             String finalAddress = (shippingAddress != null && !shippingAddress.trim().isEmpty()) ? shippingAddress : address;
 
+            // 1. Tự động lấy sellerId từ cuốn truyện có trong giỏ hàng
+            int sellerId = 1;
+            if (cart.getItems() != null) {
+                for (CartItem item : cart.getItems()) {
+                    Product p = item.getProduct();
+                    if (p != null && p.getSellerId() > 0) {
+                        sellerId = p.getSellerId();
+                        break;
+                    }
+                }
+            }
+
             OrderDao orderDao = new OrderDao();
-            // Thêm tham số cart vào cuối và hứng lấy newOrderId vừa tạo
+            int buyerId = (user != null) ? user.getId() : 1;
+
+            // 2. Truyền đúng sellerId vừa lấy được vào đơn hàng
             int newOrderId = orderDao.createOrder(
-                    user != null ? user.getId() : 1,
-                    2, // seller_id mặc định của Kenji Vault
+                    buyerId,
+                    sellerId, // Đã thay thế số 2 cố định bằng ID của người bán thật
                     finalReceiver,
                     finalPhone,
                     finalAddress,
@@ -90,13 +113,14 @@ public class CheckoutController extends HttpServlet {
                     "COD",
                     "PENDING",
                     orderCode,
-                    cart // <--- THÊM CART VÀO ĐÂY ĐỂ LƯU TỪNG CUỐN VÀO ORDER_ITEMS
+                    cart
             );
 
-            // Xóa giỏ hàng trong session sau khi đã lưu xong vào database
+            // Xóa giỏ hàng trong session sau khi đã lưu xong vào CSDL
             session.removeAttribute("cart");
 
-            // Chuyển hướng thẳng sang trang chi tiết đơn hàng vừa tạo để xem 3 cuốn truyện
-            response.sendRedirect(request.getContextPath() + "/order-success.jsp");        }
+            // Chuyển hướng sang trang đặt hàng thành công
+            response.sendRedirect(request.getContextPath() + "/order-success.jsp");
+        }
     }
 }
