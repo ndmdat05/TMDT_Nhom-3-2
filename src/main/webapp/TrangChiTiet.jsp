@@ -1,6 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" isELIgnored="false" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 
 <!DOCTYPE html>
 <html lang="vi">
@@ -142,38 +143,50 @@
                 <form action="${pageContext.request.contextPath}/cart" method="post" class="flex flex-col gap-3 m-0">
                     <input type="hidden" name="productId" value="${product.id}">
 
-                    <c:if test="${currentStock > 0}">
-                        <div class="flex items-center gap-3">
-                            <span class="text-xs font-bold text-gray-700 uppercase">Số lượng:</span>
-                            <div class="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white">
-                                <button type="button" onclick="adjustQty(-1)" class="w-8 h-8 flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold transition">-</button>
-                                <input type="number" id="quantity" name="quantity" value="1" min="1" max="${currentStock}"
-                                       class="w-12 h-8 text-center font-bold text-sm outline-none border-x border-gray-200">
-                                <button type="button" onclick="adjustQty(1)" class="w-8 h-8 flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold transition">+</button>
+                    <c:choose>
+                        <%-- TRƯỜNG HỢP CÒN HÀNG --%>
+                        <c:when test="${currentStock > 0}">
+                            <div class="flex items-center gap-3">
+                                <span class="text-xs font-bold text-gray-700 uppercase">Số lượng:</span>
+                                <div class="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white">
+                                    <button type="button" onclick="adjustQty(-1)" class="w-8 h-8 flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold transition">-</button>
+                                    <input type="number" id="quantity" name="quantity" value="1" min="1" max="${currentStock}"
+                                           class="w-12 h-8 text-center font-bold text-sm outline-none border-x border-gray-200">
+                                    <button type="button" onclick="adjustQty(1)" class="w-8 h-8 flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold transition">+</button>
+                                </div>
                             </div>
-                        </div>
 
-                        <!-- 2 NÚT DUY NHẤT: THÊM VÀO GIỎ & WISHLIST CẠNH NHAU -->
-                        <div class="flex items-center gap-2.5 mt-1">
-                            <button type="submit" name="action" value="add"
-                                    class="flex-1 h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-sm transition">
-                                <i class="fa-solid fa-cart-plus text-base"></i>
-                                <span class="text-sm">Thêm vào giỏ hàng</span>
-                            </button>
+                            <div class="flex items-center gap-2.5 mt-1">
+                                <!-- Nút 1: Thêm vào giỏ -->
+                                <button type="submit" name="action" value="add"
+                                        class="flex-1 h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-sm transition">
+                                    <i class="fa-solid fa-cart-plus text-base"></i>
+                                    <span class="text-sm">Thêm vào giỏ hàng</span>
+                                </button>
 
-                            <button type="submit" formaction="${pageContext.request.contextPath}/wishlist"
-                                    class="h-12 w-12 flex-shrink-0 flex items-center justify-center rounded-xl border transition ${isFavorited ? 'bg-rose-50 border-rose-200 text-rose-600' : 'bg-gray-50 hover:bg-rose-50 border-gray-200 hover:border-rose-200 text-gray-500 hover:text-rose-500'}"
-                                    title="${isFavorited ? 'Bỏ lưu khỏi kệ sách' : 'Lưu vào kệ sách'}">
-                                <i class="${isFavorited ? 'fa-solid text-rose-500' : 'fa-regular'} fa-heart text-lg"></i>
-                            </button>
-                        </div>
-                    </c:if>
+                                <!-- Nút 2: Trái tim -> Lưu vào wishlist và chuyển hướng sang /wishlist -->
+                                <a href="${pageContext.request.contextPath}/wishlist?action=add&productId=${product.id}"
+                                   class="h-12 w-12 flex-shrink-0 flex items-center justify-center rounded-xl border transition ${not empty sessionScope.wishlist[product.id] ? 'bg-rose-50 border-rose-200 text-rose-600' : 'bg-gray-50 hover:bg-rose-50 border-gray-200 hover:border-rose-200 text-gray-500 hover:text-rose-500'}"
+                                   title="${not empty sessionScope.wishlist[product.id] ? 'Đã có trong kệ sách' : 'Lưu vào kệ sách'}">
+                                    <i class="${not empty sessionScope.wishlist[product.id] ? 'fa-solid text-rose-500' : 'fa-regular'} fa-heart text-lg"></i>
+                                </a>
+                            </div>
+                        </c:when>
 
-                    <c:if test="${currentStock <= 0}">
-                        <button class="w-full h-12 bg-gray-200 text-gray-500 font-bold rounded-xl cursor-not-allowed" type="button" disabled>
-                            Ấn phẩm tạm hết hàng
-                        </button>
-                    </c:if>
+                        <%-- TRƯỜNG HỢP HẾT HÀNG (VẪN CHO BẤM LƯU VÀO KỆ SÁCH) --%>
+                        <c:otherwise>
+                            <div class="flex items-center gap-2.5 mt-1">
+                                <button class="flex-1 h-12 bg-gray-200 text-gray-500 font-bold rounded-xl cursor-not-allowed" type="button" disabled>
+                                    Ấn phẩm tạm hết hàng
+                                </button>
+                                <a href="${pageContext.request.contextPath}/wishlist?action=add&productId=${product.id}"
+                                   class="h-12 w-12 flex-shrink-0 flex items-center justify-center rounded-xl border transition ${not empty sessionScope.wishlist[product.id] ? 'bg-rose-50 border-rose-200 text-rose-600' : 'bg-gray-50 hover:bg-rose-50 border-gray-200 hover:border-rose-200 text-gray-500 hover:text-rose-500'}"
+                                   title="Lưu vào kệ sách để theo dõi">
+                                    <i class="${not empty sessionScope.wishlist[product.id] ? 'fa-solid text-rose-500' : 'fa-regular'} fa-heart text-lg"></i>
+                                </a>
+                            </div>
+                        </c:otherwise>
+                    </c:choose>
                 </form>
 
                 <div class="text-[11px] text-gray-500 bg-gray-50 p-2.5 rounded-lg flex items-center gap-2 border border-gray-100">
@@ -259,27 +272,108 @@
         <!-- TAB 3: HỎI ĐÁP BÌNH LUẬN -->
         <div id="tab-comments" class="tab-panel mt-4 hidden">
             <div class="bg-white rounded-xl p-6 border border-gray-200">
-                <form action="${pageContext.request.contextPath}/comment" method="post" class="mb-6">
-                    <input type="hidden" name="productId" value="${product.id}">
-                    <textarea name="content" rows="3" required placeholder="Đặt câu hỏi công khai cho người bán về tình trạng cuốn sách này..."
-                              class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:outline-indigo-600"></textarea>
-                    <div class="flex justify-end mt-2">
-                        <button type="submit" class="bg-indigo-600 text-white font-bold px-4 py-2 rounded-lg text-xs hover:bg-indigo-700 transition">
-                            Gửi câu hỏi
-                        </button>
-                    </div>
-                </form>
 
+                <%-- Thông báo sau khi gửi / xoá --%>
+                <c:if test="${not empty commentFlash}">
+                    <div class="mb-4 px-4 py-3 rounded-lg text-sm font-semibold border ${commentFlashType == 'success' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}">
+                        <i class="fa-solid ${commentFlashType == 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'} mr-1"></i>
+                        <c:out value="${commentFlash}" />
+                    </div>
+                </c:if>
+
+                <%-- Form bình luận: người mua, người bán, admin đều dùng được --%>
+                <c:choose>
+                    <c:when test="${not empty sessionScope.user}">
+                        <form action="${pageContext.request.contextPath}/comment" method="post" class="mb-6">
+                            <input type="hidden" name="action" value="add">
+                            <input type="hidden" name="productId" value="${product.id}">
+                            <div class="flex items-center gap-2 mb-2 text-xs text-gray-500">
+                                Bạn đang bình luận với tên
+                                <strong class="text-gray-800"><c:out value="${not empty sessionScope.user.full_name ? sessionScope.user.full_name : sessionScope.user.username}" /></strong>
+                                <c:if test="${sessionScope.user.id == product.sellerId}">
+                                    <span class="bg-indigo-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">Tác giả</span>
+                                </c:if>
+                            </div>
+                            <textarea name="content" rows="3" required maxlength="1000"
+                                      placeholder="${sessionScope.user.id == product.sellerId ? 'Trả lời công khai cho người mua...' : 'Đặt câu hỏi công khai cho người bán về tình trạng cuốn sách này...'}"
+                                      class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:outline-indigo-600"></textarea>
+                            <div class="flex justify-end mt-2">
+                                <button type="submit" class="bg-indigo-600 text-white font-bold px-4 py-2 rounded-lg text-xs hover:bg-indigo-700 transition">
+                                    <i class="fa-solid fa-paper-plane mr-1"></i> Gửi bình luận
+                                </button>
+                            </div>
+                        </form>
+                    </c:when>
+                    <c:otherwise>
+                        <div class="mb-6 p-4 bg-indigo-50 border border-indigo-100 rounded-lg text-sm text-gray-700 flex items-center justify-between gap-3">
+                            <span><i class="fa-solid fa-lock text-indigo-600 mr-1"></i> Vui lòng đăng nhập để đặt câu hỏi hoặc bình luận.</span>
+                            <a href="${pageContext.request.contextPath}/login" class="bg-indigo-600 text-white font-bold px-4 py-2 rounded-lg text-xs hover:bg-indigo-700 transition whitespace-nowrap">Đăng nhập</a>
+                        </div>
+                    </c:otherwise>
+                </c:choose>
+
+                <%-- Danh sách bình luận: cây không giới hạn tầng (danh sách phẳng + depth) --%>
                 <c:choose>
                     <c:when test="${not empty comments}">
-                        <div class="space-y-3">
+                        <%-- tầng quá sâu thì kéo ngang trong khung này, trang không bị vỡ --%>
+                        <div class="space-y-3 overflow-x-auto">
                             <c:forEach var="c" items="${comments}">
-                                <div class="p-3 bg-gray-50 rounded-lg border border-gray-100">
-                                    <div class="flex items-center justify-between mb-1">
-                                        <span class="font-bold text-xs text-gray-900"><c:out value="${c.userName}" default="Collector" /></span>
-                                        <span class="text-[11px] text-gray-400"><fmt:formatDate value="${c.createdAt}" pattern="dd/MM/yyyy HH:mm" /></span>
+                                <%-- thụt lề theo tầng, KHÔNG giới hạn số tầng --%>
+                                <div id="comment-${c.id}" style="margin-left:${c.depth * 16}px"
+                                     class="p-3 rounded-lg border ${c.depth == 0 ? 'bg-gray-50 border-gray-100' : 'bg-white border-gray-100 border-l-2 border-l-indigo-200'}">
+                                    <div class="flex items-start gap-3">
+                                        <div class="${c.depth == 0 ? 'w-9 h-9 text-sm' : 'w-7 h-7 text-xs'} rounded-full bg-indigo-100 text-indigo-700 font-black flex items-center justify-center flex-shrink-0 overflow-hidden">
+                                            <c:choose>
+                                                <c:when test="${not empty c.userAvatar}"><img src="${c.userAvatar}" alt="" class="w-full h-full object-cover"></c:when>
+                                                <c:otherwise>${fn:toUpperCase(fn:substring(c.userName, 0, 1))}</c:otherwise>
+                                            </c:choose>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex flex-wrap items-center gap-2 mb-1">
+                                                <span class="font-bold text-xs text-gray-900"><c:out value="${c.userName}" /></span>
+                                                <c:choose>
+                                                    <c:when test="${c.productSeller}"><span class="bg-indigo-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">Tác giả</span></c:when>
+                                                    <c:when test="${c.userRole == 'ADMIN'}"><span class="bg-rose-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">Admin</span></c:when>
+                                                </c:choose>
+                                                <c:if test="${c.depth > 0 && not empty c.parentUserName}">
+                                                    <span class="text-[11px] text-gray-400"><i class="fa-solid fa-reply fa-flip-horizontal text-[9px]"></i> trả lời <strong class="text-gray-600"><c:out value="${c.parentUserName}" /></strong></span>
+                                                </c:if>
+                                                <span class="text-[11px] text-gray-400"><fmt:formatDate value="${c.createdAt}" pattern="dd/MM/yyyy HH:mm" timeZone="Asia/Ho_Chi_Minh" /></span>
+                                            </div>
+                                            <p class="text-sm text-gray-700 whitespace-pre-line break-words"><c:out value="${c.content}" /></p>
+
+                                            <div class="flex items-center gap-3 mt-2 text-[11px] font-bold">
+                                                <c:if test="${not empty sessionScope.user}">
+                                                    <button type="button" onclick="toggleReply(${c.id})" class="text-indigo-600 hover:text-indigo-800">
+                                                        <i class="fa-solid fa-reply mr-0.5"></i> Trả lời
+                                                    </button>
+                                                </c:if>
+                                                <c:if test="${sessionScope.user.id == c.userId || sessionScope.user.role == 'ADMIN' || sessionScope.user.id == product.sellerId}">
+                                                    <form action="${pageContext.request.contextPath}/comment" method="post" class="m-0"
+                                                          onsubmit="return confirm('Xoá bình luận này (kèm tất cả câu trả lời bên dưới)?');">
+                                                        <input type="hidden" name="action" value="delete">
+                                                        <input type="hidden" name="productId" value="${product.id}">
+                                                        <input type="hidden" name="commentId" value="${c.id}">
+                                                        <button type="submit" class="text-gray-400 hover:text-rose-600"><i class="fa-regular fa-trash-can mr-0.5"></i> Xoá</button>
+                                                    </form>
+                                                </c:if>
+                                            </div>
+
+                                            <c:if test="${not empty sessionScope.user}">
+                                                <form id="reply-form-${c.id}" action="${pageContext.request.contextPath}/comment" method="post" class="hidden mt-3">
+                                                    <input type="hidden" name="action" value="reply">
+                                                    <input type="hidden" name="productId" value="${product.id}">
+                                                    <input type="hidden" name="parentId" value="${c.id}">
+                                                    <textarea name="content" rows="2" required maxlength="1000" placeholder="Trả lời ${c.userName}..."
+                                                              class="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:outline-indigo-600"></textarea>
+                                                    <div class="flex justify-end gap-2 mt-1.5">
+                                                        <button type="button" onclick="toggleReply(${c.id})" class="px-3 py-1.5 text-xs font-bold text-gray-500 hover:text-gray-800">Huỷ</button>
+                                                        <button type="submit" class="bg-indigo-600 text-white font-bold px-3 py-1.5 rounded-lg text-xs hover:bg-indigo-700 transition">Gửi trả lời</button>
+                                                    </div>
+                                                </form>
+                                            </c:if>
+                                        </div>
                                     </div>
-                                    <p class="text-xs text-gray-700"><c:out value="${c.content}" /></p>
                                 </div>
                             </c:forEach>
                         </div>
@@ -307,6 +401,45 @@
         if (val > max) val = max;
         input.value = val;
     }
+
+    function toggleReply(id) {
+        const f = document.getElementById('reply-form-' + id);
+        if (!f) return;
+        f.classList.toggle('hidden');
+        if (!f.classList.contains('hidden')) {
+            const ta = f.querySelector('textarea');
+            if (ta) ta.focus();
+        }
+    }
+
+    // Sau khi gửi/xoá bình luận: mở tab Hỏi Đáp và cuộn tới ĐÚNG bình luận (không nhảy lên đầu tab)
+    function openCommentsFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        const hash = window.location.hash;
+        if (params.get('tab') !== 'comments' && hash !== '#tab-comments' && hash.indexOf('#comment-') !== 0) return;
+
+        switchTab('tab-comments');
+
+        const target = hash.indexOf('#comment-') === 0 ? document.getElementById(hash.substring(1)) : null;
+        if (target) {
+            target.scrollIntoView({block: 'center'});
+            target.style.transition = 'background-color 1.5s';
+            target.style.backgroundColor = '#e0e7ff';
+            setTimeout(function () { target.style.backgroundColor = ''; }, 1800);
+        } else {
+            const el = document.getElementById('tab-comments');
+            if (el) el.scrollIntoView({block: 'start'});
+        }
+    }
+    document.addEventListener('DOMContentLoaded', openCommentsFromUrl);
+    // chạy lại sau khi ảnh/CSS tải xong vì layout có thể đổi chiều cao
+    window.addEventListener('load', function () {
+        const h = window.location.hash;
+        if (h.indexOf('#comment-') === 0) {
+            const el = document.getElementById(h.substring(1));
+            if (el) el.scrollIntoView({block: 'center'});
+        }
+    });
 
     function switchTab(tabId) {
         document.querySelectorAll('.tab-panel').forEach(panel => {
