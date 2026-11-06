@@ -67,7 +67,6 @@
                 </div>
 
                 <form action="${pageContext.request.contextPath}/product-list" method="GET" class="space-y-5">
-
                     <div>
                         <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Nhà Xuất Bản</label>
                         <div class="relative">
@@ -155,9 +154,7 @@
         </aside>
 
         <section class="lg:col-span-3 space-y-6">
-
             <div class="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-
                 <c:choose>
                     <c:when test="${not empty productList}">
                         <c:forEach var="p" items="${productList}">
@@ -172,25 +169,52 @@
                                     <div>
                                         <div class="flex items-center justify-between text-[11px] text-gray-400 mb-1">
                                             <span class="truncate max-w-[110px]">Tác giả: <strong class="text-gray-700">${p.author}</strong></span>
-                                            <span class="text-indigo-600 font-bold">${p.item_condition}</span>
+                                            <span class="text-indigo-600 font-bold">
+                                                <c:choose>
+                                                    <c:when test="${p.item_condition == 'NEW'}">Mới 100% (SEAL)</c:when>
+                                                    <c:when test="${p.item_condition == 'LIKE_NEW'}">Like New (Sưu tầm)</c:when>
+                                                    <c:when test="${p.item_condition == 'USED'}">Đã qua sử dụng</c:when>
+                                                    <c:otherwise>${p.item_condition}</c:otherwise>
+                                                </c:choose>
+                                            </span>
                                         </div>
                                         <h4 class="font-bold text-gray-900 text-sm md:text-base leading-tight mb-2 line-clamp-2">
                                             <a href="${pageContext.request.contextPath}/product-detail?id=${p.id}" class="hover:text-indigo-600 transition-colors">${p.title}</a>
                                         </h4>
                                         <p class="text-xs text-gray-500 mb-1 truncate" title="${p.publisherName}">
-                                            <i class="fas fa-book-open text-indigo-500 mr-1"></i>
-                                            NXB:
-                                            <span class="font-semibold text-gray-700">
-                                                    ${not empty p.publisherName ? p.publisherName : 'Chưa cập nhật'}
-                                            </span>
+                                            <i class="fas fa-book-open text-indigo-500 mr-1"></i> NXB: <span class="font-semibold text-gray-700">${not empty p.publisherName ? p.publisherName : 'Chưa cập nhật'}</span>
                                         </p>
                                         <p class="text-xs text-gray-500 mb-2 truncate">
                                             Shop: <span class="font-semibold text-gray-700">${p.sellerName}</span>
                                         </p>
-                                        <p class="text-indigo-600 font-extrabold text-sm md:text-base mb-4"><fmt:formatNumber value="${p.price}" pattern="#,###" /> đ</p>
+                                        <p class="text-indigo-600 font-extrabold text-sm md:text-base mb-4">
+                                            <fmt:formatNumber value="${p.price}" pattern="#,###" /> đ
+                                        </p>
                                     </div>
-                                    <div class="w-full mt-auto">
-                                        <a href="${pageContext.request.contextPath}/product-detail?id=${p.id}" class="block w-full text-center py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs md:text-sm rounded-xl transition shadow-sm">Xem Chi Tiết</a>
+                                    <div class="w-full mt-auto flex flex-row items-center gap-2">
+                                        <a href="${pageContext.request.contextPath}/product-detail?id=${p.id}"
+                                           class="flex-1 min-w-0 h-12 flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs md:text-sm rounded-xl transition shadow-sm">
+                                            Xem Chi Tiết
+                                        </a>
+
+
+                                        <form action="${pageContext.request.contextPath}/cart" method="post" class="m-0 shrink-0">
+                                            <input type="hidden" name="action" value="add">
+                                            <input type="hidden" name="productId" value="${p.id}">
+                                            <input type="hidden" name="quantity" value="1">
+                                            <button type="submit"
+                                                    class="h-12 w-12 flex items-center justify-center rounded-xl border border-gray-200 bg-gray-50 hover:bg-indigo-50 hover:border-indigo-200 text-gray-500 hover:text-indigo-600 transition"
+                                                    title="Thêm vào giỏ hàng">
+                                                <i class="fa-solid fa-cart-plus text-base"></i>
+                                            </button>
+                                        </form>
+
+
+                                        <a href="${pageContext.request.contextPath}/wishlist?action=add&productId=${p.id}"
+                                           class="h-12 w-12 shrink-0 flex items-center justify-center rounded-xl border transition ${not empty sessionScope.wishlist[p.id] ? 'bg-rose-50 border-rose-200 text-rose-600' : 'bg-gray-50 hover:bg-rose-50 border-gray-200 hover:border-rose-200 text-gray-500 hover:text-rose-500'}"
+                                           title="${not empty sessionScope.wishlist[p.id] ? 'Đã có trong kệ sách' : 'Lưu vào kệ sách'}">
+                                            <i class="${not empty sessionScope.wishlist[p.id] ? 'fa-solid text-rose-500' : 'fa-regular'} fa-heart text-lg"></i>
+                                        </a>
                                     </div>
                                 </div>
                             </div>
@@ -204,7 +228,6 @@
                         </div>
                     </c:otherwise>
                 </c:choose>
-
             </div>
 
             <c:if test="${totalPages > 1}">
@@ -217,7 +240,6 @@
                     </c:forEach>
                 </div>
             </c:if>
-
         </section>
     </div>
 </main>
