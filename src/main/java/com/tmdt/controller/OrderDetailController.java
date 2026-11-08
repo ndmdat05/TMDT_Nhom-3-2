@@ -36,7 +36,6 @@ public class OrderDetailController extends HttpServlet {
 
         try {
             int orderId = Integer.parseInt(idParam);
-            OrderDao orderDao = new OrderDao();
             Order order = orderDao.getOrderById(orderId, user.getId());
 
             if (order == null) {
@@ -47,6 +46,7 @@ public class OrderDetailController extends HttpServlet {
             List<OrderItem> items = orderDao.getOrderItemsByOrderId(orderId);
 
             request.setAttribute("order", order);
+            request.setAttribute("cancelReason", order.getCancelReason());
             request.setAttribute("items", items);
             request.getRequestDispatcher("/order-detail.jsp").forward(request, response);
 
@@ -77,13 +77,16 @@ public class OrderDetailController extends HttpServlet {
             try {
                 int orderId = Integer.parseInt(orderIdRaw.trim());
 
-                // Xác thực đơn hàng thuộc về đúng Buyer và vẫn đang ở trạng thái PENDING
-                Order order = orderDao.getOrderById(orderId, user.getId());
-                if (order != null && "PENDING".equalsIgnoreCase(order.getStatus())) {
-                    orderDao.updateOrderStatus(orderId, "CANCELLED");
+                // Lấy lý do hủy do người mua chọn từ modal
+                String cancelReason = request.getParameter("cancelReason");
+                if (cancelReason == null || cancelReason.trim().isEmpty()) {
+                    cancelReason = "Đổi ý không muốn mua nữa";
                 }
 
-                // Tải lại trang chi tiết để hiển thị banner đã hủy
+                // Gọi hàm hoàn tiền ví và cập nhật trạng thái CANCELLED
+                orderDao.cancelOrderWithWalletRefund(orderId, user.getId(), cancelReason);
+
+                // Tải lại trang chi tiết để hiển thị banner đã hủy và trạng thái ví
                 response.sendRedirect(request.getContextPath() + "/order-detail?id=" + orderId);
                 return;
 
