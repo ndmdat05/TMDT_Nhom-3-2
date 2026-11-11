@@ -48,15 +48,29 @@
         <c:if test="${order.status eq 'CANCELLED'}">
             <div class="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-3">
                 <i class="fas fa-circle-exclamation text-rose-500 text-lg mt-0.5"></i>
-                <div class="text-sm">
+                <div class="text-sm flex-1">
                     <h4 class="font-bold text-rose-800">Đơn hàng này đã bị hủy</h4>
                     <p class="text-rose-600 mt-0.5">
-                        Lý do: <span class="font-medium">${not empty cancelReason ? cancelReason : 'Đơn hàng đã được hủy theo yêu cầu hoặc do sự cố kho.'}</span>
+                        Lý do: <span class="font-medium">${not empty cancelReason ? cancelReason : 'Đơn hàng đã được hủy theo yêu cầu.'}</span>
                     </p>
-                    <p class="text-xs text-rose-500 mt-1">
-                        Hình thức: <b class="uppercase">${not empty order.paymentMethod ? order.paymentMethod : 'COD'}</b> |
-                        Hoàn tiền: <span class="font-semibold text-rose-700">${order.paymentStatus eq 'REFUNDED' ? 'Đã hoàn tiền' : (order.paymentMethod eq 'ONLINE' ? 'Đang hoàn tiền' : 'Không phát sinh')}</span>
-                    </p>
+                    <div class="flex flex-wrap items-center gap-2 text-xs text-rose-500 mt-1.5 pt-1.5 border-t border-rose-100">
+                        <span>Hình thức: <b class="uppercase text-gray-700">${not empty order.paymentMethod ? order.paymentMethod : 'COD'}</b></span>
+                        <span>•</span>
+                        <span>Hoàn tiền:
+                    <c:choose>
+                        <c:when test="${order.paymentStatus eq 'REFUNDED'}">
+                            <span class="font-bold text-emerald-600">Đã hoàn vào Ví MangaVault</span>
+                            <a href="${pageContext.request.contextPath}/wallet" class="ml-1 text-indigo-600 hover:underline font-semibold">[Kiểm tra số dư]</a>
+                        </c:when>
+                        <c:when test="${order.paymentMethod eq 'ONLINE'}">
+                            <span class="font-semibold text-amber-600">Đang hoàn tiền</span>
+                        </c:when>
+                        <c:otherwise>
+                            <span class="text-gray-500">Không phát sinh</span>
+                        </c:otherwise>
+                    </c:choose>
+                </span>
+                    </div>
                 </div>
             </div>
         </c:if>
@@ -97,16 +111,10 @@
             <!-- CỤM NÚT ACTION CHO BUYER: NÚT HỦY LUÔN HIỆN KHI ĐƠN PENDING -->
             <div class="flex items-center gap-3">
                 <c:if test="${order.status == 'PENDING'}">
-                    <form method="post" action="${pageContext.request.contextPath}/order-detail"
-                          onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này?');"
-                          style="display: inline;">
-                        <input type="hidden" name="action" value="cancel">
-                        <input type="hidden" name="orderId" value="${order.id}">
-                        <button type="submit"
-                                class="px-4 py-2.5 border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl text-sm font-semibold transition inline-flex items-center gap-1.5 shadow-sm">
-                            <i class="fas fa-ban text-xs"></i> Hủy đơn hàng
-                        </button>
-                    </form>
+                    <button type="button" onclick="openCancelModal()"
+                            class="px-4 py-2.5 border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl text-sm font-semibold transition inline-flex items-center gap-1.5 shadow-sm">
+                        <i class="fas fa-ban text-xs"></i> Hủy đơn hàng
+                    </button>
                 </c:if>
 
                 <a href="${pageContext.request.contextPath}/" class="px-4 py-2.5 border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl text-sm font-semibold transition">
@@ -374,7 +382,71 @@
         </div>
 
     </div>
+    <!-- MODAL CHỌN LÝ DO HỦY ĐƠN (PHONG CÁCH SHOPEE) -->
+    <div id="cancelOrderModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm hidden transition-opacity">
+        <div class="bg-white rounded-2xl w-full max-w-lg p-6 shadow-2xl border border-gray-100 mx-4 transform transition-all">
+            <div class="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
+                <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                  Lý do hủy đơn hàng
+                </h3>
+                <button type="button" onclick="closeCancelModal()" class="text-gray-400 hover:text-gray-600 p-1">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
 
+            <form method="post" action="${pageContext.request.contextPath}/order-detail" id="cancelOrderForm">
+                <input type="hidden" name="action" value="cancel">
+                <input type="hidden" name="orderId" value="${order.id}">
+
+                <p class="text-xs text-gray-500 mb-3">Vui lòng chọn lý do chính xác để MangaVault hỗ trợ bạn tốt hơn:</p>
+
+                <!-- CÁC LỰA CHỌN LÝ DO HỦY -->
+                <div class="space-y-2.5 mb-5 text-sm">
+                    <label class="flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:bg-gray-50 cursor-pointer transition">
+                        <input type="radio" name="cancelReason" value="Tôi muốn thay đổi địa chỉ nhận hàng" class="text-indigo-600 focus:ring-indigo-500" checked>
+                        <span class="text-gray-700">Tôi muốn thay đổi địa chỉ nhận hàng</span>
+                    </label>
+
+                    <label class="flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:bg-gray-50 cursor-pointer transition">
+                        <input type="radio" name="cancelReason" value="Tôi muốn đổi sản phẩm khác / thêm tập truyện" class="text-indigo-600 focus:ring-indigo-500">
+                        <span class="text-gray-700">Tôi muốn đổi sản phẩm khác / thêm tập truyện</span>
+                    </label>
+
+                    <label class="flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:bg-gray-50 cursor-pointer transition">
+                        <input type="radio" name="cancelReason" value="Đổi ý không muốn mua nữa" class="text-indigo-600 focus:ring-indigo-500">
+                        <span class="text-gray-700">Đổi ý không muốn mua nữa</span>
+                    </label>
+
+                    <label class="flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:bg-gray-50 cursor-pointer transition">
+                        <input type="radio" name="cancelReason" value="Tìm thấy chỗ khác bán rẻ hơn" class="text-indigo-600 focus:ring-indigo-500">
+                        <span class="text-gray-700">Tìm thấy chỗ khác bán rẻ hơn</span>
+                    </label>
+                </div>
+
+                <!-- CÁC NÚT THAO TÁC -->
+                <div class="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
+                    <button type="button" onclick="closeCancelModal()"
+                            class="px-4 py-2 border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-xl text-sm font-semibold transition">
+                        Đóng
+                    </button>
+                    <button type="submit"
+                            class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-sm font-semibold transition shadow">
+                        Xác nhận hủy
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SCRIPT ĐÓNG / MỞ MODAL -->
+    <script>
+        function openCancelModal() {
+            document.getElementById('cancelOrderModal').classList.remove('hidden');
+        }
+        function closeCancelModal() {
+            document.getElementById('cancelOrderModal').classList.add('hidden');
+        }
+    </script>
 </main>
 
 <jsp:include page="/includes/footer.jsp" />

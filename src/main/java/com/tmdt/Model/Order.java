@@ -19,6 +19,8 @@ public class Order {
     private String receiverPhone;
     private String paymentMethod;
     private String paymentStatus;
+    private String cancelReason; // Đã thêm
+
     public Order() {}
 
     // Constructor cũ (giữ nguyên để tránh lỗi code cũ)
@@ -67,35 +69,48 @@ public class Order {
         this.paymentStatus = paymentStatus;
     }
 
-    public int getId() { return id; }
-    public void setId(int id) { this.id = id; }
-    public String getOrderCode() { return orderCode; }
-    public void setOrderCode(String orderCode) { this.orderCode = orderCode; }
-    public String getProductTitle() { return productTitle; }
-    public void setProductTitle(String productTitle) { this.productTitle = productTitle; }
-    public String getBuyerName() { return buyerName; }
-    public void setBuyerName(String buyerName) { this.buyerName = buyerName; }
-    public String getSellerName() { return sellerName; }
-    public void setSellerName(String sellerName) { this.sellerName = sellerName; }
-    public double getTotalAmount() { return totalAmount; }
-    public void setTotalAmount(double totalAmount) { this.totalAmount = totalAmount; }
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-    public String getTrackingNumber() { return trackingNumber; }
-    public void setTrackingNumber(String trackingNumber) { this.trackingNumber = trackingNumber; }
-    public String getShippingAddress() { return shippingAddress; }
-    public void setShippingAddress(String shippingAddress) { this.shippingAddress = shippingAddress; }
-    public Date getEstimatedDelivery() { return estimatedDelivery; }
-    public void setEstimatedDelivery(Date estimatedDelivery) { this.estimatedDelivery = estimatedDelivery; }
-    public Timestamp getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Timestamp createdAt) { this.createdAt = createdAt; }
-
-    public String getReceiverName() {
-        return receiverName;
+    public void setId(int id) {
+        this.id = id;
     }
 
-    public String getReceiverPhone() {
-        return receiverPhone;
+    public void setOrderCode(String orderCode) {
+        this.orderCode = orderCode;
+    }
+
+    public void setProductTitle(String productTitle) {
+        this.productTitle = productTitle;
+    }
+
+    public void setBuyerName(String buyerName) {
+        this.buyerName = buyerName;
+    }
+
+    public void setSellerName(String sellerName) {
+        this.sellerName = sellerName;
+    }
+
+    public void setTotalAmount(double totalAmount) {
+        this.totalAmount = totalAmount;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public void setTrackingNumber(String trackingNumber) {
+        this.trackingNumber = trackingNumber;
+    }
+
+    public void setShippingAddress(String shippingAddress) {
+        this.shippingAddress = shippingAddress;
+    }
+
+    public void setEstimatedDelivery(Date estimatedDelivery) {
+        this.estimatedDelivery = estimatedDelivery;
+    }
+
+    public void setCreatedAt(Timestamp createdAt) {
+        this.createdAt = createdAt;
     }
 
     public void setReceiverName(String receiverName) {
@@ -106,19 +121,79 @@ public class Order {
         this.receiverPhone = receiverPhone;
     }
 
-    public String getPaymentStatus() {
-        return paymentStatus;
-    }
-
-    public String getPaymentMethod() {
-        return paymentMethod;
-    }
-
     public void setPaymentMethod(String paymentMethod) {
         this.paymentMethod = paymentMethod;
     }
 
     public void setPaymentStatus(String paymentStatus) {
         this.paymentStatus = paymentStatus;
+    }
+
+    public void setCancelReason(String cancelReason) {
+        this.cancelReason = cancelReason;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public String getOrderCode() {
+        return orderCode;
+    }
+
+    public String getProductTitle() {
+        return productTitle;
+    }
+
+    public String getBuyerName() {
+        return buyerName;
+    }
+
+    public String getSellerName() {
+        return sellerName;
+    }
+
+    public double getTotalAmount() {
+        return totalAmount;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public String getTrackingNumber() {
+        return trackingNumber;
+    }
+
+    public String getShippingAddress() {
+        return shippingAddress;
+    }
+
+    public Date getEstimatedDelivery() {
+        return estimatedDelivery;
+    }
+
+    public Timestamp getCreatedAt() {
+        return createdAt;
+    }
+
+    public String getReceiverName() {
+        return receiverName;
+    }
+
+    public String getReceiverPhone() {
+        return receiverPhone;
+    }
+
+    public String getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public String getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    public String getCancelReason() {
+        return cancelReason;
     }
 }

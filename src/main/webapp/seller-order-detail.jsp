@@ -34,6 +34,41 @@
         <span class="badge bg-light text-dark border">Kênh Người Bán</span>
     </div>
 
+    <!-- BANNER CẢNH BÁO: HIỂN THỊ KHI ĐƠN HÀNG BỊ HỦY -->
+    <c:if test="${order.status == 'CANCELLED'}">
+        <div class="alert alert-danger border-0 rounded-4 shadow-sm p-4 mb-4 d-flex align-items-start gap-3">
+            <div class="w-10 h-10 rounded-circle bg-danger bg-opacity-10 text-danger d-flex align-items-center justify-content-center flex-shrink-0 mt-1">
+                <i class="fas fa-ban fs-5"></i>
+            </div>
+            <div class="flex-grow-1">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <h5 class="fw-bold mb-1 text-danger">Đơn hàng này đã bị hủy</h5>
+                    <span class="badge bg-danger text-white rounded-pill px-3 py-1.5 font-monospace">CANCELLED</span>
+                </div>
+                <p class="mb-1 small text-dark mt-2">
+                    <strong>Lý do từ người mua:</strong>
+                    <span class="text-danger fw-bold ms-1">
+                            ${not empty order.cancelReason ? order.cancelReason : 'Đổi ý không muốn mua nữa'}
+                    </span>
+                </p>
+                <c:choose>
+                    <c:when test="${order.paymentStatus == 'REFUNDED'}">
+                        <p class="mb-0 text-muted small mt-1">
+                            <i class="fas fa-circle-check text-success me-1"></i>
+                            Đơn thanh toán trước đã được hoàn tiền vào Ví MangaVault của người mua và số lượng truyện đã được tự động hoàn lại kho.
+                        </p>
+                    </c:when>
+                    <c:otherwise>
+                        <p class="mb-0 text-muted small mt-1">
+                            <i class="fas fa-circle-info text-secondary me-1"></i>
+                            Đơn hàng COD chưa thanh toán. Số lượng truyện đã được hoàn lại kho.
+                        </p>
+                    </c:otherwise>
+                </c:choose>
+            </div>
+        </div>
+    </c:if>
+
     <!-- KHỐI 1: TỔNG QUAN ĐƠN HÀNG & TRẠNG THÁI HIỆN TẠI -->
     <div class="card border-0 shadow-sm rounded-4 mb-4">
         <div class="card-body p-4 md:p-5">
@@ -193,7 +228,7 @@
                 <!-- BƯỚC 1: XÁC NHẬN ĐÓNG GÓI KHI ĐANG PENDING -->
                 <c:if test="${order.status == 'PENDING'}">
                     <button type="submit" name="newStatus" value="CONFIRMED" class="btn btn-primary px-4 py-2.5 fw-bold rounded-3 shadow-sm">
-                         Xác nhận đóng gói
+                        Xác nhận đóng gói
                     </button>
                 </c:if>
 
@@ -207,7 +242,7 @@
                 <!-- BƯỚC 3: XÁC NHẬN GIAO THÀNH CÔNG KHI ĐANG SHIPPING -->
                 <c:if test="${order.status == 'SHIPPING'}">
                     <button type="submit" name="newStatus" value="COMPLETED" class="btn btn-success px-4 py-2.5 fw-bold rounded-3 shadow-sm">
-                       Xác nhận giao thành công
+                        Xác nhận giao thành công
                     </button>
                 </c:if>
 
@@ -215,7 +250,7 @@
                 <c:if test="${order.status == 'PENDING' or order.status == 'CONFIRMED'}">
                     <button type="submit" name="newStatus" value="CANCELLED" class="btn btn-outline-danger px-4 py-2.5 fw-bold rounded-3"
                             onclick="return confirm('Bạn có chắc chắn muốn TỪ CHỐI / HỦY đơn hàng này không? Sách sẽ được hoàn lại kho.')">
-                         Từ chối / Hủy đơn
+                        Từ chối / Hủy đơn
                     </button>
                 </c:if>
 
@@ -224,7 +259,9 @@
                     <span class="text-success small fw-semibold"><i class="fas fa-circle-check me-1"></i> Đơn hàng đã hoàn tất giao dịch. Không thể chỉnh sửa thêm.</span>
                 </c:if>
                 <c:if test="${order.status == 'CANCELLED'}">
-                    <span class="text-danger small fw-semibold"><i class="fas fa-circle-xmark me-1"></i> Đơn hàng này đã bị hủy.</span>
+                    <span class="text-danger small fw-semibold">
+                        <i class="fas fa-circle-xmark me-1"></i> Đơn hàng này đã bị hủy. Lý do: <b class="ms-1">${not empty order.cancelReason ? order.cancelReason : 'Người mua hủy'}</b>
+                    </span>
                 </c:if>
             </form>
         </div>

@@ -92,6 +92,9 @@
                         <a href="${pageContext.request.contextPath}/profile" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 no-underline">
                             <i class="fas fa-user mr-2"></i>Tài khoản của tôi
                         </a>
+                        <a href="${pageContext.request.contextPath}/wallet" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 no-underline">
+                            <i class="fas fa-wallet mr-2 gray-100"></i>Ví MangaVault
+                        </a>
                         <c:if test="${sessionScope.user.role eq 'ADMIN'}">
                             <a href="${pageContext.request.contextPath}/dashboard" class="block px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 font-semibold no-underline">
                                 <i class="fas fa-chart-line mr-2"></i>Trang quản trị
