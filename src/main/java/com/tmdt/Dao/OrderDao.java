@@ -5,11 +5,11 @@ import com.tmdt.Model.Order;
 import com.tmdt.Model.OrderItem;
 import com.tmdt.db.JDBIConnector;
 import org.jdbi.v3.core.Jdbi;
-
+import com.tmdt.Model.CartItem;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-
+import com.tmdt.Model.Product;
 import static com.tmdt.db.JDBIConnector.get;
 
 public class OrderDao {
@@ -172,9 +172,32 @@ public class OrderDao {
     // ==============================================================
     // HÀM LƯU ĐƠN HÀNG VÀO DATABASE MANGAZDB
     // ==============================================================
-    public int createOrder(Integer buyerId, Integer sellerId, String receiverName, String receiverPhone,
+    public int createOrder(Integer buyerId, Integer sellerId,
+                           String receiverName, String receiverPhone,
                            String address, double totalAmount, String paymentMethod,
                            String paymentStatus, String orderCode, Cart cart) {
+
+        // ============ ✅ VALIDATE BẮT BUỘC ============
+        if (buyerId == null || buyerId <= 0) {
+            System.err.println("[createOrder] FAIL: buyerId không hợp lệ = " + buyerId);
+            return 0;
+        }
+        if (sellerId == null || sellerId <= 0) {
+            System.err.println("[createOrder] FAIL: sellerId không hợp lệ = " + sellerId);
+            return 0;
+        }
+        if (orderCode == null || orderCode.trim().isEmpty()) {
+            System.err.println("[createOrder] FAIL: orderCode rỗng");
+            return 0;
+        }
+        if (cart == null || cart.getTotalQuantity() == 0) {
+            System.err.println("[createOrder] FAIL: cart rỗng");
+            return 0;
+        }
+        if (totalAmount <= 0) {
+            System.err.println("[createOrder] FAIL: totalAmount <= 0");
+            return 0;
+        }
 
         String sqlOrder = "INSERT INTO orders (order_code, buyer_id, seller_id, receiver_name, receiver_phone, "
                 + "shipping_address, total_amount, payment_method, payment_status, order_status, "
@@ -191,12 +214,14 @@ public class OrderDao {
 
         try {
             Jdbi jdbi = get();
+            final int finalBuyerId  = buyerId;
+            final int finalSellerId = sellerId;
 
             return jdbi.inTransaction(handle -> {
                 int orderId = handle.createUpdate(sqlOrder)
                         .bind("orderCode", orderCode)
-                        .bind("buyerId", (buyerId != null && buyerId > 0) ? buyerId : 1)
-                        .bind("sellerId", (sellerId != null && sellerId > 0) ? sellerId : 2)
+                        .bind("buyerId",   finalBuyerId)
+                        .bind("sellerId",  finalSellerId)
                         .bind("receiverName", receiverName)
                         .bind("receiverPhone", receiverPhone)
                         .bind("address", address)
@@ -208,24 +233,24 @@ public class OrderDao {
                         .mapTo(Integer.class)
                         .one();
 
-                if (cart != null && cart.getItems() != null) {
-                    for (com.tmdt.Model.CartItem item : cart.getItems()) {
-                        com.tmdt.Model.Product p = item.getProduct();
-                        if (p != null) {
-                            handle.createUpdate(sqlItem)
-                                    .bind("orderId", orderId)
-                                    .bind("productId", p.getId())
-                                    .bind("productTitle", p.getTitle())
-                                    .bind("quantity", item.getQuantity())
-                                    .bind("unitPrice", p.getPrice())
-                                    .execute();
+                for (CartItem item : cart.getItems()) {
+                    Product p = item.getProduct();
+                    if (p == null) continue;
 
-                            handle.createUpdate("UPDATE products SET stock_quantity = stock_quantity - :quantity WHERE id = :productId AND stock_quantity >= :quantity")
-                                    .bind("quantity", item.getQuantity())
-                                    .bind("productId", p.getId())
-                                    .execute();
-                        }
-                    }
+                    handle.createUpdate(sqlItem)
+                            .bind("orderId", orderId)
+                            .bind("productId", p.getId())
+                            .bind("productTitle", p.getTitle())
+                            .bind("quantity", item.getQuantity())
+                            .bind("unitPrice", p.getPrice())
+                            .execute();
+
+                    handle.createUpdate(
+                                    "UPDATE products SET stock_quantity = stock_quantity - :quantity "
+                                            + "WHERE id = :productId AND stock_quantity >= :quantity")
+                            .bind("quantity", item.getQuantity())
+                            .bind("productId", p.getId())
+                            .execute();
                 }
 
                 String note = "PAID".equalsIgnoreCase(paymentStatus)
@@ -239,7 +264,8 @@ public class OrderDao {
                         .bind("note", note)
                         .execute();
 
-                orderList.add(new Order(orderId, "Đơn hàng " + orderCode, "MangaVault", receiverName, (int) totalAmount, "PENDING", orderCode));
+                System.out.println("[createOrder] OK: orderId=" + orderId
+                        + ", buyer=" + finalBuyerId + ", seller=" + finalSellerId);
 
                 return orderId;
             });

@@ -2,8 +2,6 @@ package com.tmdt.controller;
 
 import com.tmdt.Dao.OrderDao;
 import com.tmdt.Model.Cart;
-import com.tmdt.Model.CartItem;
-import com.tmdt.Model.Product;
 import com.tmdt.Model.User;
 import com.tmdt.untils.VnpayConfig;
 import jakarta.servlet.ServletException;
@@ -25,15 +23,13 @@ public class VNPayReturnController extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+        // ============ 1. VERIFY SIGNATURE ============
         Map<String, String> fields = new HashMap<>();
         for (Enumeration<String> params = request.getParameterNames(); params.hasMoreElements(); ) {
             String fieldName = params.nextElement();
             String fieldValue = request.getParameter(fieldName);
-            if ((fieldValue != null) && (!fieldValue.isEmpty())) {
-                fields.put(fieldName, fieldValue);
-            }
+            if (fieldValue != null && !fieldValue.isEmpty()) fields.put(fieldName, fieldValue);
         }
-
         String vnp_SecureHash = request.getParameter("vnp_SecureHash");
         fields.remove("vnp_SecureHashType");
         fields.remove("vnp_SecureHash");
@@ -43,79 +39,91 @@ public class VNPayReturnController extends HttpServlet {
         StringBuilder hashData = new StringBuilder();
         Iterator<String> itr = fieldNames.iterator();
         while (itr.hasNext()) {
-            String fieldName = itr.next();
-            String fieldValue = fields.get(fieldName);
-            if ((fieldValue != null) && (!fieldValue.isEmpty())) {
-                hashData.append(fieldName);
-                hashData.append('=');
-                hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()));
-                if (itr.hasNext()) {
-                    hashData.append('&');
-                }
+            String fn = itr.next();
+            String fv = fields.get(fn);
+            if (fv != null && !fv.isEmpty()) {
+                hashData.append(fn).append('=')
+                        .append(URLEncoder.encode(fv, StandardCharsets.US_ASCII));
+                if (itr.hasNext()) hashData.append('&');
             }
         }
-
         String signValue = VnpayConfig.hmacSHA512(VnpayConfig.vnp_HashSecret, hashData.toString());
-        boolean checkSignature = signValue.equalsIgnoreCase(vnp_SecureHash);
+        boolean validSignature = signValue.equalsIgnoreCase(vnp_SecureHash);
 
-        String vnp_ResponseCode = request.getParameter("vnp_ResponseCode");
-        String orderCode = request.getParameter("vnp_TxnRef");
+        String responseCode = request.getParameter("vnp_ResponseCode");
+        String orderCode    = request.getParameter("vnp_TxnRef");
         HttpSession session = request.getSession();
 
-        if (checkSignature && "00".equals(vnp_ResponseCode)) {
-            // ==========================================
-            // 1. THANH TOÁN THÀNH CÔNG -> LƯU VÀO DATABASE
-            // ==========================================
-            Cart cart = (Cart) session.getAttribute("cart");
-            User user = (User) session.getAttribute("user");
-            if (user == null) {
-                user = (User) session.getAttribute("account");
-            }
-            String receiverName = (String) session.getAttribute("order_name");
-            String receiverPhone = (String) session.getAttribute("order_phone");
-            String address = (String) session.getAttribute("order_address");
-
-            if (cart != null) {
-                // Tự động quét giỏ hàng để lấy đúng ID của người bán
-                int sellerId = 1;
-                if (cart.getItems() != null) {
-                    for (CartItem item : cart.getItems()) {
-                        Product p = item.getProduct();
-                        if (p != null && p.getSellerId() > 0) {
-                            sellerId = p.getSellerId();
-                            break;
-                        }
-                    }
-                }
-
-                OrderDao orderDao = new OrderDao();
-                orderDao.createOrder(
-                        user != null ? user.getId() : 1,
-                        sellerId, // <-- ĐÃ SỬA: Lấy đúng ID người bán thay vì cố định số 2
-                        receiverName,
-                        receiverPhone,
-                        address,
-                        cart.getTotalMoney(),
-                        "ONLINE",
-                        "PAID",
-                        orderCode,
-                        cart
-                );
-
-                // Xóa giỏ hàng và dữ liệu đặt hàng trong session sau khi đã lưu xong
-                session.removeAttribute("cart");
-                session.removeAttribute("order_name");
-                session.removeAttribute("order_phone");
-                session.removeAttribute("order_address");
-                session.removeAttribute("order_email");
-                session.removeAttribute("order_payment_method");
-                session.removeAttribute("order_code");
-            }
-
-            request.getRequestDispatcher("/order-success.jsp").forward(request, response);
-
-        } else {
+        if (!validSignature || !"00".equals(responseCode)) {
             request.getRequestDispatcher("/order-failed.jsp").forward(request, response);
+            return;
         }
+
+        // ============ 2. LẤY ID TỪ SESSION ============
+        Cart cart = (Cart) session.getAttribute("cart");
+        String receiverName = (String) session.getAttribute("order_name");
+        String receiverPhone = (String) session.getAttribute("order_phone");
+        String address = (String) session.getAttribute("order_address");
+
+        Integer buyerId  = (Integer) session.getAttribute("checkout_buyer_id");
+        Integer sellerId = (Integer) session.getAttribute("checkout_seller_id");
+
+        // Fallback: nếu vì lý do gì đó session mất, đọc user từ session (không fallback về 1/2)
+        if (buyerId == null || buyerId <= 0) {
+            User user = getLoggedInUser(session);
+            if (user != null) buyerId = user.getId();
+        }
+
+        if (buyerId == null || buyerId <= 0
+                || sellerId == null || sellerId <= 0
+                || cart == null || cart.getTotalQuantity() == 0
+                || receiverName == null || receiverPhone == null || address == null) {
+            // Không thể xác định buyer/seller/đơn -> báo thất bại, KHÔNG tạo đơn rác
+            System.err.println("[VNPayReturn] Missing data: buyerId=" + buyerId
+                    + ", sellerId=" + sellerId
+                    + ", cartEmpty=" + (cart == null || cart.getTotalQuantity() == 0));
+            request.getRequestDispatcher("/order-failed.jsp").forward(request, response);
+            return;
+        }
+
+        // ============ 3. TẠO ĐƠN ============
+        OrderDao orderDao = new OrderDao();
+        int newId = orderDao.createOrder(
+                buyerId,
+                sellerId,
+                receiverName,
+                receiverPhone,
+                address,
+                cart.getTotalMoney(),
+                "ONLINE",
+                "PAID",
+                orderCode,
+                cart
+        );
+
+        if (newId <= 0) {
+            request.getRequestDispatcher("/order-failed.jsp").forward(request, response);
+            return;
+        }
+
+        // ============ 4. CLEANUP ============
+        session.removeAttribute("cart");
+        session.removeAttribute("order_name");
+        session.removeAttribute("order_phone");
+        session.removeAttribute("order_address");
+        session.removeAttribute("order_email");
+        session.removeAttribute("order_payment_method");
+        session.removeAttribute("order_code");
+        session.removeAttribute("checkout_buyer_id");
+        session.removeAttribute("checkout_seller_id");
+
+        request.getRequestDispatcher("/order-success.jsp").forward(request, response);
+    }
+
+    private User getLoggedInUser(HttpSession session) {
+        if (session == null) return null;
+        Object u = session.getAttribute("user");
+        if (!(u instanceof User)) u = session.getAttribute("account");
+        return (u instanceof User) ? (User) u : null;
     }
 }

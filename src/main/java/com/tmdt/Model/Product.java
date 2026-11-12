@@ -21,8 +21,10 @@ public class Product {
     private String publisherName;
     private int categories_id;
     private String categoriesName;
+    private Integer brandId;
 
-
+    public Integer getBrandId() { return brandId; }
+    public void setBrandId(Integer brandId) { this.brandId = brandId; }
     public Product() {}
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
