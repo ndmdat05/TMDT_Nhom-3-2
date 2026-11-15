@@ -335,6 +335,28 @@
                                                     <c:when test="${c.productSeller}"><span class="bg-indigo-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">Tác giả</span></c:when>
                                                     <c:when test="${c.userRole == 'ADMIN'}"><span class="bg-rose-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">Admin</span></c:when>
                                                 </c:choose>
+
+                                                    <%-- HUY HIỆU CẢM XÚC AI --%>
+                                                <c:if test="${c.depth == 0}">
+                                                    <c:choose>
+                                                        <c:when test="${c.sentiment == 'POSITIVE'}">
+                <span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full text-[11px] font-bold" title="AI đánh giá: Hài lòng">
+                    <span>😍</span> Hài lòng
+                </span>
+                                                        </c:when>
+                                                        <c:when test="${c.sentiment == 'NEGATIVE'}">
+                <span class="inline-flex items-center gap-1 bg-rose-50 text-rose-700 border border-rose-200 px-2 py-0.5 rounded-full text-[11px] font-bold" title="AI đánh giá: Không hài lòng">
+                    <span>😡</span> Không hài lòng
+                </span>
+                                                        </c:when>
+                                                        <c:otherwise>
+                <span class="inline-flex items-center gap-1 bg-gray-100 text-gray-600 border border-gray-200 px-2 py-0.5 rounded-full text-[11px] font-bold" title="AI đánh giá: Bình thường">
+                    <span>😐</span> Bình thường
+                </span>
+                                                        </c:otherwise>
+                                                    </c:choose>
+                                                </c:if>
+
                                                 <c:if test="${c.depth > 0 && not empty c.parentUserName}">
                                                     <span class="text-[11px] text-gray-400"><i class="fa-solid fa-reply fa-flip-horizontal text-[9px]"></i> trả lời <strong class="text-gray-600"><c:out value="${c.parentUserName}" /></strong></span>
                                                 </c:if>

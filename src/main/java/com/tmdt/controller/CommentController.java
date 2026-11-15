@@ -12,17 +12,23 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Xử lý bình luận ở trang chi tiết sản phẩm.
- * Người mua, người bán, admin (đã đăng nhập) đều có thể bình luận / trả lời.
- * POST /comment  action = add | reply | delete
+ * Tích hợp AI phân tích cảm xúc (Sentiment Analysis) cho bình luận.
  */
 @WebServlet(name = "CommentController", urlPatterns = {"/comment"})
 public class CommentController extends HttpServlet {
 
     private static final int MAX_LENGTH = 1000;
+    private static final String AI_API_URL = "http://127.0.0.1:5000/predict";
 
     private final CommentDao commentDao = new CommentDao();
     private final ProductDao productDao = new ProductDao();
@@ -101,7 +107,6 @@ public class CommentController extends HttpServlet {
             try {
                 int pid = Integer.parseInt(request.getParameter("parentId"));
                 Comment parent = commentDao.getById(pid);
-                // Trả lời được BẤT KỲ bình luận nào (mọi tầng) của cùng sản phẩm
                 if (parent == null || parent.getProductId() != product.getId()) {
                     flash(session, "error", "Bình luận cần trả lời không tồn tại.");
                     return "tab-comments";
@@ -113,10 +118,19 @@ public class CommentController extends HttpServlet {
             }
         }
 
-        int newId = commentDao.addComment(product.getId(), user.getId(), parentId, content);
+        // 👉 PHÂN TÍCH CẢM XÚC: Chỉ phân tích bình luận gốc, câu trả lời mặc định là NEUTRAL
+        String sentiment = "NEUTRAL";
+        Double confidence = 1.0;
+        if (!isReply) {
+            SentimentResult result = analyzeSentimentWithAI(content);
+            sentiment = result.sentiment;
+            confidence = result.confidence;
+        }
+
+        int newId = commentDao.addComment(product.getId(), user.getId(), parentId, content, sentiment, confidence);
         if (newId > 0) {
             flash(session, "success", isReply ? "Đã gửi câu trả lời." : "Đã đăng bình luận.");
-            return "comment-" + newId;   // cuộn tới đúng bình luận vừa gửi
+            return "comment-" + newId;
         }
         flash(session, "error", "Không thể lưu bình luận, vui lòng thử lại.");
         return "tab-comments";
@@ -139,7 +153,6 @@ public class CommentController extends HttpServlet {
             }
             if (commentDao.deleteComment(commentId, product.getId())) {
                 flash(session, "success", "Đã xoá bình luận.");
-                // ở lại đúng chỗ: về bình luận cha (nếu có), không thì về đầu tab
                 return c.getParentId() != null ? "comment-" + c.getParentId() : "tab-comments";
             }
             flash(session, "error", "Không thể xoá bình luận.");
@@ -148,6 +161,76 @@ public class CommentController extends HttpServlet {
             flash(session, "error", "Bình luận không hợp lệ.");
             return "tab-comments";
         }
+    }
+
+    // ==============================================================
+    // KẾT NỐI SANG PYTHON SERVICE (FASTAPI / PHOBERT)
+    // ==============================================================
+    private static class SentimentResult {
+        String sentiment;
+        Double confidence;
+        SentimentResult(String sentiment, Double confidence) {
+            this.sentiment = sentiment;
+            this.confidence = confidence;
+        }
+    }
+
+    private SentimentResult analyzeSentimentWithAI(String text) {
+        try {
+            URL url = new URL(AI_API_URL);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+            conn.setRequestProperty("Accept", "application/json");
+            conn.setConnectTimeout(3000); // 1.5s timeout nếu Python chưa bật
+            conn.setReadTimeout(5000);
+            conn.setDoOutput(true);
+
+            // Escape chuỗi JSON an toàn
+            String safeText = text.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", " ");
+            String jsonInput = "{\"text\": \"" + safeText + "\"}";
+
+            try (OutputStream os = conn.getOutputStream()) {
+                byte[] input = jsonInput.getBytes(StandardCharsets.UTF_8);
+                os.write(input, 0, input.length);
+            }
+
+            if (conn.getResponseCode() == 200) {
+                try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+                    StringBuilder response = new StringBuilder();
+                    String responseLine;
+                    while ((responseLine = br.readLine()) != null) {
+                        response.append(responseLine.trim());
+                    }
+                    String res = response.toString();
+
+                    // Parse nhanh JSON kết quả {"sentiment":"POSITIVE", ...}
+                    String sentiment = "NEUTRAL";
+                    if (res.contains("\"POSITIVE\"")) sentiment = "POSITIVE";
+                    else if (res.contains("\"NEGATIVE\"")) sentiment = "NEGATIVE";
+
+                    double conf = 0.95;
+                    java.util.regex.Matcher m = java.util.regex.Pattern.compile("\"confidence\"\\s*:\\s*([0-9.]+)").matcher(res);
+                    if (m.find()) {
+                        conf = Double.parseDouble(m.group(1));
+                    }
+
+                    return new SentimentResult(sentiment, conf);
+                }
+            }
+        } catch (Exception e) {
+            // Khi chưa chạy server Python: Dự phòng bằng từ khóa cơ bản để bạn test web trước
+            String lower = text.toLowerCase();
+            if (lower.contains("đẹp") || lower.contains("thích") || lower.contains("ưng") || lower.contains("tốt")
+                    || lower.contains("mê") || lower.contains("nhanh") || lower.contains("khen") || lower.contains("tuyệt")) {
+                return new SentimentResult("POSITIVE", 0.90);
+            }
+            if (lower.contains("rách") || lower.contains("tệ") || lower.contains("chán") || lower.contains("xấu")
+                    || lower.contains("mờ") || lower.contains("lừa") || lower.contains("hỏng") || lower.contains("thất vọng")) {
+                return new SentimentResult("NEGATIVE", 0.90);
+            }
+        }
+        return new SentimentResult("NEUTRAL", 0.80);
     }
 
     private void flash(HttpSession session, String type, String message) {
