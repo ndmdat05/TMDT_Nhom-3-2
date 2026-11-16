@@ -1,6 +1,7 @@
 package com.tmdt.Model;
 
 import java.sql.Timestamp;
+
 /** Bình luận / hỏi đáp công khai của một sản phẩm (bảng product_comments). */
 public class Comment {
     private int id;
@@ -8,6 +9,8 @@ public class Comment {
     private int userId;
     private Integer parentId;
     private String content;
+    private String sentiment;        // POSITIVE | NEUTRAL | NEGATIVE
+    private Double confidenceScore;  // Điểm tin cậy (vd: 0.9520)
     private String status;
     private Timestamp createdAt;
 
@@ -37,6 +40,12 @@ public class Comment {
     public String getContent() { return content; }
     public void setContent(String content) { this.content = content; }
 
+    public String getSentiment() { return sentiment; }
+    public void setSentiment(String sentiment) { this.sentiment = sentiment; }
+
+    public Double getConfidenceScore() { return confidenceScore; }
+    public void setConfidenceScore(Double confidenceScore) { this.confidenceScore = confidenceScore; }
+
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
 
@@ -60,4 +69,19 @@ public class Comment {
 
     public String getParentUserName() { return parentUserName; }
     public void setParentUserName(String parentUserName) { this.parentUserName = parentUserName; }
+
+    // ==============================================================
+    // TIỆN ÍCH DÙNG CHO HIỂN THỊ
+    // ==============================================================
+    public String getEmoji() {
+        if ("POSITIVE".equalsIgnoreCase(sentiment)) return "😍";
+        if ("NEGATIVE".equalsIgnoreCase(sentiment)) return "😡";
+        return "😐";
+    }
+
+    public String getSentimentLabel() {
+        if ("POSITIVE".equalsIgnoreCase(sentiment)) return "Hài lòng";
+        if ("NEGATIVE".equalsIgnoreCase(sentiment)) return "Không hài lòng";
+        return "Bình thường";
+    }
 }
