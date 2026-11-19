@@ -1,4 +1,3 @@
-
 <%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
@@ -10,7 +9,7 @@
         Báo cáo & Khiếu nại
     </h1>
     <p class="text-sm text-gray-500">
-        Tiếp nhận, kiểm tra và xử lý báo cáo về bài đăng hoặc người dùng trên MangaZ.
+        Tiếp nhận, kiểm tra và xử lý báo cáo về bài đăng, bình luận hoặc người dùng.
     </p>
 </div>
 
@@ -31,9 +30,6 @@
     </div>
     <c:remove var="adminError" scope="session"/>
 </c:if>
-
-<c:set var="reportTotal" value="${totalReportCount}"/>
-<c:set var="reportResolved" value="${resolvedCount}"/>
 
 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
 
@@ -84,7 +80,7 @@
                 Danh sách báo cáo
             </h2>
             <p class="text-sm text-gray-500 mt-1">
-                Các báo cáo mới nhất được hiển thị trước.
+                Các báo cáo mới nhất được hiển thị trước. (Bao gồm cả báo cáo tự động từ AI)
             </p>
         </div>
 
@@ -122,14 +118,22 @@
                     </td>
 
                     <td class="px-5 py-4">
-                        <p class="font-semibold text-gray-800">
-                            <c:out value="${report.reporterName}"
-                                   default="Người dùng không xác định"/>
-                        </p>
-                        <p class="text-xs text-gray-500 mt-1">
-                            ID:
-                            <c:out value="${report.reporterId}"/>
-                        </p>
+                            <%-- Nếu reporterId == 0 thì là Hệ thống AI tự báo cáo --%>
+                        <c:choose>
+                            <c:when test="${report.reporterId == 0}">
+                                <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-100 text-blue-700 text-xs font-bold mb-1">
+                                    <i class="fas fa-robot"></i> Hệ thống AI
+                                </span>
+                            </c:when>
+                            <c:otherwise>
+                                <p class="font-semibold text-gray-800">
+                                    <c:out value="${report.reporterName}" default="Người dùng"/>
+                                </p>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    ID: <c:out value="${report.reporterId}"/>
+                                </p>
+                            </c:otherwise>
+                        </c:choose>
                     </td>
 
                     <td class="px-5 py-4 min-w-48">
@@ -142,47 +146,55 @@
                                     <c:out value="${report.reportedUserName}"/>
                                 </c:when>
                                 <c:otherwise>
-                                    <c:out value="${report.targetType}"
-                                           default="Không xác định"/>
+                                    <c:out value="${report.targetType}" default="Không xác định"/>
                                 </c:otherwise>
                             </c:choose>
                         </p>
 
                         <p class="text-xs text-gray-500 mt-1">
                             Loại:
-                            <c:out value="${report.targetType}"
-                                   default="Chưa phân loại"/>
+                            <c:choose>
+                                <c:when test="${report.targetType == 'COMMENT'}">
+                                    <span class="text-red-600 font-semibold">Bình luận</span>
+                                </c:when>
+                                <c:otherwise>
+                                    <c:out value="${report.targetType}" default="Chưa phân loại"/>
+                                </c:otherwise>
+                            </c:choose>
                             <c:if test="${not empty report.targetId}">
-                                · ID:
-                                <c:out value="${report.targetId}"/>
+                                · ID: <c:out value="${report.targetId}"/>
                             </c:if>
                         </p>
 
                         <c:if test="${not empty report.description}">
                             <p class="text-sm text-gray-600 mt-2 whitespace-normal
-                                      break-words max-w-xs">
-                                <c:out value="${report.description}"/>
+                                      break-words max-w-xs bg-gray-50 p-2 rounded border border-gray-100 italic">
+                                "<c:out value="${report.description}"/>"
                             </p>
                         </c:if>
                     </td>
 
                     <td class="px-5 py-4 min-w-40">
                         <p class="text-sm font-semibold text-gray-800">
-                            <c:out value="${report.reasonType}"
-                                   default="Không có lý do"/>
+                            <c:choose>
+                                <c:when test="${report.reasonType == 'TOXIC_LANGUAGE'}">
+                                    <span class="text-red-600">Ngôn từ độc hại</span>
+                                </c:when>
+                                <c:otherwise>
+                                    <c:out value="${report.reasonType}" default="Không có lý do"/>
+                                </c:otherwise>
+                            </c:choose>
                         </p>
 
                         <c:if test="${not empty report.adminNote}">
                             <p class="text-xs text-gray-500 mt-2">
-                                Ghi chú:
-                                <c:out value="${report.adminNote}"/>
+                                Ghi chú: <c:out value="${report.adminNote}"/>
                             </p>
                         </c:if>
                     </td>
 
                     <td class="px-5 py-4 whitespace-nowrap text-sm text-gray-600">
-                        <c:out value="${report.createdAt}"
-                               default="Không rõ"/>
+                        <c:out value="${report.createdAt}" default="Không rõ"/>
                     </td>
 
                     <td class="px-5 py-4 whitespace-nowrap">
@@ -194,7 +206,6 @@
                                     Đang chờ
                                 </span>
                             </c:when>
-
                             <c:when test="${report.status == 'RESOLVED'}">
                                 <span class="inline-flex px-2.5 py-1 rounded-full
                                              text-xs font-bold bg-emerald-50
@@ -202,7 +213,6 @@
                                     Đã giải quyết
                                 </span>
                             </c:when>
-
                             <c:when test="${report.status == 'DISMISSED'}">
                                 <span class="inline-flex px-2.5 py-1 rounded-full
                                              text-xs font-bold bg-gray-100
@@ -210,13 +220,11 @@
                                     Đã bác bỏ
                                 </span>
                             </c:when>
-
                             <c:otherwise>
                                 <span class="inline-flex px-2.5 py-1 rounded-full
                                              text-xs font-bold bg-gray-100
                                              text-gray-700">
-                                    <c:out value="${report.status}"
-                                           default="Không xác định"/>
+                                    <c:out value="${report.status}" default="Không xác định"/>
                                 </span>
                             </c:otherwise>
                         </c:choose>
@@ -226,61 +234,37 @@
                         <c:if test="${report.status == 'PENDING'}">
                             <div class="flex flex-col gap-2 min-w-36">
 
-                                <form method="post"
-                                      action="${ctx}/admin/manage"
-                                      onsubmit="return confirm('Bạn xác nhận giải quyết báo cáo #RP-${report.id}?');">
+                                <form method="post" action="${ctx}/admin/manage"
+                                      onsubmit="return confirm('Bạn xác nhận giải quyết báo cáo #RP-${report.id}? Bình luận sẽ bị ẩn vĩnh viễn.');">
 
-                                    <input type="hidden" name="tab"
-                                           value="report-center"/>
-                                    <input type="hidden" name="action"
-                                           value="resolve"/>
-                                    <input type="hidden" name="reportId"
-                                           value="${report.id}"/>
+                                    <input type="hidden" name="tab" value="report-center"/>
+                                    <input type="hidden" name="action" value="resolve"/>
+                                    <input type="hidden" name="reportId" value="${report.id}"/>
 
-                                    <label class="block text-xs text-gray-500 mb-1">
-                                        Ghi chú xử lý
-                                    </label>
-                                    <input type="text"
-                                           name="adminNote"
-                                           maxlength="500"
-                                           placeholder="Nhập ghi chú (nếu có)"
-                                           class="w-full border border-gray-300
-                                                  rounded-lg px-2 py-1.5 text-xs mb-2"/>
+                                    <input type="text" name="adminNote" maxlength="500"
+                                           placeholder="Ghi chú xử lý (nếu có)"
+                                           class="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs mb-2"/>
 
                                     <button type="submit"
-                                            class="w-full rounded-lg bg-emerald-600
-                                                   hover:bg-emerald-700 text-white
-                                                   px-3 py-2 text-xs font-semibold">
-                                        <i class="fas fa-check mr-1"></i>
-                                        Giải quyết
+                                            class="w-full rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 text-xs font-semibold">
+                                        <i class="fas fa-check mr-1"></i> Giải quyết
                                     </button>
                                 </form>
 
-                                <form method="post"
-                                      action="${ctx}/admin/manage"
-                                      onsubmit="return confirm('Bạn xác nhận bác bỏ báo cáo #RP-${report.id}?');">
+                                <form method="post" action="${ctx}/admin/manage"
+                                      onsubmit="return confirm('Bạn xác nhận bác bỏ báo cáo #RP-${report.id}? Nếu là báo cáo AI, bình luận sẽ được hiển thị lại.');">
 
-                                    <input type="hidden" name="tab"
-                                           value="report-center"/>
-                                    <input type="hidden" name="action"
-                                           value="dismiss"/>
-                                    <input type="hidden" name="reportId"
-                                           value="${report.id}"/>
+                                    <input type="hidden" name="tab" value="report-center"/>
+                                    <input type="hidden" name="action" value="dismiss"/>
+                                    <input type="hidden" name="reportId" value="${report.id}"/>
 
-                                    <input type="text"
-                                           name="adminNote"
-                                           maxlength="500"
+                                    <input type="text" name="adminNote" maxlength="500"
                                            placeholder="Lý do bác bỏ"
-                                           class="w-full border border-gray-300
-                                                  rounded-lg px-2 py-1.5 text-xs mb-2"/>
+                                           class="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs mb-2"/>
 
                                     <button type="submit"
-                                            class="w-full rounded-lg border
-                                                   border-gray-300 hover:bg-gray-100
-                                                   text-gray-700 px-3 py-2
-                                                   text-xs font-semibold">
-                                        <i class="fas fa-times mr-1"></i>
-                                        Bác bỏ
+                                            class="w-full rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700 px-3 py-2 text-xs font-semibold">
+                                        <i class="fas fa-times mr-1"></i> Bác bỏ
                                     </button>
                                 </form>
 
@@ -288,9 +272,7 @@
                         </c:if>
 
                         <c:if test="${report.status != 'PENDING'}">
-                            <span class="text-xs text-gray-400">
-                                Đã xử lý
-                            </span>
+                            <span class="text-xs text-gray-400">Đã xử lý</span>
                         </c:if>
                     </td>
 
@@ -305,9 +287,6 @@
                         </div>
                         <p class="font-semibold text-gray-700">
                             Chưa có báo cáo nào
-                        </p>
-                        <p class="text-sm text-gray-500 mt-1">
-                            Khi có báo cáo mới, dữ liệu sẽ xuất hiện tại đây.
                         </p>
                     </td>
                 </tr>

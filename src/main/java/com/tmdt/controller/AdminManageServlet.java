@@ -1,4 +1,3 @@
-
 package com.tmdt.controller;
 import org.mindrot.jbcrypt.BCrypt;
 import com.google.gson.Gson;
@@ -8,9 +7,11 @@ import com.tmdt.Dao.ProductModerationDao;
 import com.tmdt.Dao.ReportDao;
 import com.tmdt.Dao.SupportRequestDao;
 import com.tmdt.Dao.UserDao;
+import com.tmdt.Dao.CommentDao; // Thêm import này
 import com.tmdt.Model.DashboardCategoryShare;
 import com.tmdt.Model.DashboardChartPoint;
 import com.tmdt.Model.DashboardData;
+import com.tmdt.Model.ReportItem; // Thêm import này
 import com.tmdt.Model.User;
 import com.tmdt.service.DashboardService;
 import com.tmdt.Dao.CategoryDao;
@@ -33,15 +34,8 @@ import java.util.Set;
 public class AdminManageServlet extends HttpServlet {
 
     private static final Set<String> TABS = Set.of(
-            "dashboard",
-            "users",
-            "products",
-            "orders",
-            "content-review",
-            "report-center",
-            "support-center",
-            "data-management",
-            "categories"
+            "dashboard", "users", "products", "orders", "content-review",
+            "report-center", "support-center", "data-management", "categories"
     );
 
     private static final String DEFAULT_TAB = "dashboard";
@@ -49,397 +43,139 @@ public class AdminManageServlet extends HttpServlet {
     private final UserDao userDao = new UserDao();
     private final ProductDao productDao = new ProductDao();
     private final OrderDao orderDao = new OrderDao();
-    private final ProductModerationDao productModerationDao =
-            new ProductModerationDao();
+    private final ProductModerationDao productModerationDao = new ProductModerationDao();
     private final ReportDao reportDao = new ReportDao();
-    private final SupportRequestDao supportRequestDao =
-            new SupportRequestDao();
-    private final DashboardService dashboardService =
-            new DashboardService();
+    private final SupportRequestDao supportRequestDao = new SupportRequestDao();
+    private final DashboardService dashboardService = new DashboardService();
+    private final CommentDao commentDao = new CommentDao(); // Khai báo thêm
     private final Gson gson = new Gson();
 
-    // =========================================================
-    // GET: Tải dữ liệu và hiển thị tab quản trị
-    // =========================================================
-
     @Override
-    protected void doGet(
-            HttpServletRequest request,
-            HttpServletResponse response
-    ) throws ServletException, IOException {
-
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
         response.setContentType("text/html;charset=UTF-8");
-
         String tab = normalizeTab(request.getParameter("tab"));
 
         try {
             switch (tab) {
-
-                case "dashboard":
-                    loadDashboard(request);
-                    break;
-
-                case "users":
-                    request.setAttribute(
-                            "userList",
-                            userDao.getAllUsers()
-                    );
-                    break;
-
-                case "products":
-                    request.setAttribute(
-                            "productList",
-                            productDao.getAllProductsForAdmin()
-                    );
-                    break;
-
-                case "orders":
-                    request.setAttribute(
-                            "orderList",
-                            orderDao.getAllOrders()
-                    );
-                    break;
-
-                case "content-review":
-                    loadContentReview(request);
-                    break;
-
-                case "report-center":
-                    loadReportCenter(request);
-                    break;
-
-                case "support-center":
-                    loadSupportCenter(request);
-                    break;
-                case "data-management":
-                    request.setAttribute(
-                            "mangaList",
-                            productDao.getAllProductsForAdmin()
-                    );
-                    break;
-
-                case "categories":
-                    request.setAttribute(
-                            "categoryList",
-                            categoryDao.getAllCategories()
-                    );
-                    break;
-
-                default:
-                    loadDashboard(request);
-                    break;
+                case "dashboard": loadDashboard(request); break;
+                case "users": request.setAttribute("userList", userDao.getAllUsers()); break;
+                case "products": request.setAttribute("productList", productDao.getAllProductsForAdmin()); break;
+                case "orders": request.setAttribute("orderList", orderDao.getAllOrders()); break;
+                case "content-review": loadContentReview(request); break;
+                case "report-center": loadReportCenter(request); break;
+                case "support-center": loadSupportCenter(request); break;
+                case "data-management": request.setAttribute("mangaList", productDao.getAllProductsForAdmin()); break;
+                case "categories": request.setAttribute("categoryList", categoryDao.getAllCategories()); break;
+                default: loadDashboard(request); break;
             }
-
         } catch (Exception e) {
-            getServletContext().log(
-                    "Lỗi tải dữ liệu tab admin: " + tab,
-                    e
-            );
-
-            request.setAttribute(
-                    "adminError",
-                    "Không thể tải dữ liệu. Vui lòng kiểm tra log của Tomcat."
-            );
+            getServletContext().log("Lỗi tải dữ liệu tab admin: " + tab, e);
+            request.setAttribute("adminError", "Không thể tải dữ liệu. Vui lòng kiểm tra log của Tomcat.");
 
             if ("content-review".equals(tab)) {
                 request.setAttribute("reviewLoadError", true);
-                request.setAttribute(
-                        "pendingProducts",
-                        Collections.emptyList()
-                );
+                request.setAttribute("pendingProducts", Collections.emptyList());
                 request.setAttribute("pendingCount", 0);
                 request.setAttribute("approvedToday", 0);
                 request.setAttribute("rejectedThisWeek", 0);
                 request.setAttribute("successRate", 0);
             }
-
             if ("report-center".equals(tab)) {
-                request.setAttribute(
-                        "reports",
-                        Collections.emptyList()
-                );
+                request.setAttribute("reports", Collections.emptyList());
                 request.setAttribute("pendingCount", 0);
                 request.setAttribute("resolvedCount", 0);
                 request.setAttribute("dismissedCount", 0);
                 request.setAttribute("totalReportCount", 0);
             }
-
             if ("support-center".equals(tab)) {
-                request.setAttribute(
-                        "tickets",
-                        Collections.emptyList()
-                );
+                request.setAttribute("tickets", Collections.emptyList());
                 request.setAttribute("pendingCount", 0);
                 request.setAttribute("inReviewCount", 0);
                 request.setAttribute("resolvedCount", 0);
                 request.setAttribute("totalTicketCount", 0);
             }
-
-            if ("users".equals(tab)) {
-                request.setAttribute(
-                        "userList",
-                        Collections.emptyList()
-                );
-            }
-
-            if ("products".equals(tab)) {
-                request.setAttribute(
-                        "productList",
-                        Collections.emptyList()
-                );
-            }
-
-            if ("orders".equals(tab)) {
-                request.setAttribute(
-                        "orderList",
-                        Collections.emptyList()
-                );
-            }
+            if ("users".equals(tab)) request.setAttribute("userList", Collections.emptyList());
+            if ("products".equals(tab)) request.setAttribute("productList", Collections.emptyList());
+            if ("orders".equals(tab)) request.setAttribute("orderList", Collections.emptyList());
         }
 
-        // Gửi tab đang chọn cho layout JSP.
         request.setAttribute("activeTab", tab);
-
-        // Forward đến layout quản trị mới có sidebar.
-        request.getRequestDispatcher(
-                "/admin-tabs/_manage.jsp"
-        ).forward(request, response);
+        request.getRequestDispatcher("/admin-tabs/_manage.jsp").forward(request, response);
     }
 
-    // =========================================================
-    // Kiểm duyệt bài đăng
-    // =========================================================
-
     private void loadContentReview(HttpServletRequest request) {
-
-        /*
-         * Chẩn đoán database mà ứng dụng thực sự kết nối.
-         * Xem dòng [ADMIN CONTENT REVIEW] trong log Tomcat.
-         */
         try {
-            String diagnostic =
-                    productModerationDao.getPendingDiagnostic();
-
-            getServletContext().log(
-                    "[ADMIN CONTENT REVIEW] " + diagnostic
-            );
-
+            String diagnostic = productModerationDao.getPendingDiagnostic();
+            getServletContext().log("[ADMIN CONTENT REVIEW] " + diagnostic);
         } catch (Exception e) {
-            getServletContext().log(
-                    "Không lấy được thông tin chẩn đoán kiểm duyệt.",
-                    e
-            );
+            getServletContext().log("Không lấy được thông tin chẩn đoán kiểm duyệt.", e);
         }
 
-        // Danh sách bài đang chờ duyệt.
-        request.setAttribute(
-                "pendingProducts",
-                productModerationDao.getPendingProducts()
-        );
+        request.setAttribute("pendingProducts", productModerationDao.getPendingProducts());
+        request.setAttribute("pendingCount", productModerationDao.countPending());
+        request.setAttribute("approvedToday", productModerationDao.countApprovedToday());
+        request.setAttribute("rejectedThisWeek", productModerationDao.countRejectedThisWeek());
+        request.setAttribute("successRate", productModerationDao.getApprovalRateThisWeek());
 
-        // Các thẻ thống kê.
-        request.setAttribute(
-                "pendingCount",
-                productModerationDao.countPending()
-        );
-
-        request.setAttribute(
-                "approvedToday",
-                productModerationDao.countApprovedToday()
-        );
-
-        request.setAttribute(
-                "rejectedThisWeek",
-                productModerationDao.countRejectedThisWeek()
-        );
-
-        request.setAttribute(
-                "successRate",
-                productModerationDao.getApprovalRateThisWeek()
-        );
-
-        // Chi tiết bài đăng nếu quản trị viên chọn xem.
         String viewId = request.getParameter("viewId");
-
         if (viewId != null && !viewId.isBlank()) {
             try {
                 int productId = Integer.parseInt(viewId.trim());
-
-                request.setAttribute(
-                        "selectedProduct",
-                        productModerationDao.getById(productId)
-                );
-
+                request.setAttribute("selectedProduct", productModerationDao.getById(productId));
             } catch (NumberFormatException e) {
-                request.setAttribute(
-                        "adminError",
-                        "Mã bài đăng không hợp lệ."
-                );
+                request.setAttribute("adminError", "Mã bài đăng không hợp lệ.");
             }
         }
     }
 
-    // =========================================================
-    // Trung tâm báo cáo
-    // =========================================================
-
     private void loadReportCenter(HttpServletRequest request) {
-
-        request.setAttribute(
-                "reports",
-                reportDao.getAllReports()
-        );
-
-        request.setAttribute(
-                "pendingCount",
-                reportDao.countPending()
-        );
-
-        request.setAttribute(
-                "resolvedCount",
-                reportDao.countResolved()
-        );
-
-        request.setAttribute(
-                "dismissedCount",
-                reportDao.countDismissed()
-        );
-
-        request.setAttribute(
-                "totalReportCount",
-                reportDao.countAll()
-        );
+        request.setAttribute("reports", reportDao.getAllReports());
+        request.setAttribute("pendingCount", reportDao.countPending());
+        request.setAttribute("resolvedCount", reportDao.countResolved());
+        request.setAttribute("dismissedCount", reportDao.countDismissed());
+        request.setAttribute("totalReportCount", reportDao.countAll());
     }
-
-    // =========================================================
-    // Hỗ trợ khách hàng
-    // =========================================================
 
     private void loadSupportCenter(HttpServletRequest request) {
-
-        request.setAttribute(
-                "tickets",
-                supportRequestDao.getAllTickets()
-        );
-
-        request.setAttribute(
-                "pendingCount",
-                supportRequestDao.countPending()
-        );
-
-        request.setAttribute(
-                "inReviewCount",
-                supportRequestDao.countInReview()
-        );
-
-        request.setAttribute(
-                "resolvedCount",
-                supportRequestDao.countResolved()
-        );
-
-        request.setAttribute(
-                "totalTicketCount",
-                supportRequestDao.countAll()
-        );
+        request.setAttribute("tickets", supportRequestDao.getAllTickets());
+        request.setAttribute("pendingCount", supportRequestDao.countPending());
+        request.setAttribute("inReviewCount", supportRequestDao.countInReview());
+        request.setAttribute("resolvedCount", supportRequestDao.countResolved());
+        request.setAttribute("totalTicketCount", supportRequestDao.countAll());
     }
 
-    // =========================================================
-    // POST: Xử lý thao tác của quản trị viên
-    // =========================================================
-
     @Override
-    protected void doPost(
-            HttpServletRequest request,
-            HttpServletResponse response
-    ) throws ServletException, IOException {
-
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
-
         String tab = normalizeTab(request.getParameter("tab"));
         String action = request.getParameter("action");
-
         HttpSession session = request.getSession();
 
         try {
             switch (tab) {
-
-                case "users":
-                    handleUsers(request, session, action);
-                    break;
-
-                case "products":
-                case "data-management":
-                    handleProducts(request, session, action);
-                    break;
-                case "categories":
-                    handleCategories(request, session, action);
-                    break;
-                case "orders":
-                    handleOrders(request, session, action);
-                    break;
-
-                case "content-review":
-                    handleContentReviewPost(request, session, action);
-                    break;
-
-                case "report-center":
-                    handleReports(request, session, action);
-                    break;
-
-                case "support-center":
-                    handleSupport(request, session);
-                    break;
-
-                default:
-                    session.setAttribute(
-                            "adminError",
-                            "Thao tác quản trị không hợp lệ."
-                    );
-                    break;
+                case "users": handleUsers(request, session, action); break;
+                case "products": case "data-management": handleProducts(request, session, action); break;
+                case "categories": handleCategories(request, session, action); break;
+                case "orders": handleOrders(request, session, action); break;
+                case "content-review": handleContentReviewPost(request, session, action); break;
+                case "report-center": handleReports(request, session, action); break;
+                case "support-center": handleSupport(request, session); break;
+                default: session.setAttribute("adminError", "Thao tác quản trị không hợp lệ."); break;
             }
-
         } catch (NumberFormatException e) {
-            session.setAttribute(
-                    "adminError",
-                    "Mã ID không hợp lệ."
-            );
-
+            session.setAttribute("adminError", "Mã ID không hợp lệ.");
         } catch (Exception e) {
-            getServletContext().log(
-                    "Lỗi xử lý POST tab=" + tab
-                            + ", action=" + action,
-                    e
-            );
-
-            session.setAttribute(
-                    "adminError",
-                    "Đã xảy ra lỗi khi xử lý yêu cầu. Vui lòng kiểm tra log."
-            );
+            getServletContext().log("Lỗi xử lý POST tab=" + tab + ", action=" + action, e);
+            session.setAttribute("adminError", "Đã xảy ra lỗi khi xử lý yêu cầu. Vui lòng kiểm tra log.");
         }
 
-        response.sendRedirect(
-                request.getContextPath()
-                        + "/admin/manage?tab="
-                        + tab
-        );
+        response.sendRedirect(request.getContextPath() + "/admin/manage?tab=" + tab);
     }
 
-    // =========================================================
-    // Quản lý người dùng
-    // =========================================================
-
-    private void handleUsers(
-            HttpServletRequest request,
-            HttpSession session,
-            String action
-    ) {
-
-        // =========================
-        // 1. THÊM NGƯỜI DÙNG
-        // =========================
+    private void handleUsers(HttpServletRequest request, HttpSession session, String action) {
+        // (Giữ nguyên toàn bộ code Users của bạn...)
         if ("add".equals(action)) {
-
             String fullName = request.getParameter("fullName");
             String username = request.getParameter("username");
             String email = request.getParameter("email");
@@ -447,408 +183,146 @@ public class AdminManageServlet extends HttpServlet {
             String role = request.getParameter("role");
             String status = request.getParameter("status");
 
-            if (fullName == null || fullName.isBlank()
-                    || username == null || username.isBlank()
-                    || email == null || email.isBlank()
-                    || password == null || password.length() < 8) {
-
-                session.setAttribute(
-                        "adminError",
-                        "Vui lòng nhập đầy đủ thông tin và mật khẩu ít nhất 8 ký tự."
-                );
+            if (fullName == null || fullName.isBlank() || username == null || username.isBlank() || email == null || email.isBlank() || password == null || password.length() < 8) {
+                session.setAttribute("adminError", "Vui lòng nhập đầy đủ thông tin và mật khẩu ít nhất 8 ký tự.");
                 return;
             }
-
-            if (userDao.existsByUsername(username.trim())
-                    || userDao.existsByEmail(email.trim())) {
-
-                session.setAttribute(
-                        "adminError",
-                        "Username hoặc email đã tồn tại."
-                );
+            if (userDao.existsByUsername(username.trim()) || userDao.existsByEmail(email.trim())) {
+                session.setAttribute("adminError", "Username hoặc email đã tồn tại.");
                 return;
             }
-
-            String hashedPassword = BCrypt.hashpw(
-                    password,
-                    BCrypt.gensalt(12)
-            );
-
-            User user = new User(
-                    fullName.trim(),
-                    username.trim(),
-                    email.trim(),
-                    hashedPassword,
-                    role,
-                    false,
-                    "",
-                    "LOCAL",
-                    "",
-                    "",
-                    status
-            );
-
+            String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt(12));
+            User user = new User(fullName.trim(), username.trim(), email.trim(), hashedPassword, role, false, "", "LOCAL", "", "", status);
             boolean added = userDao.addUser(user);
-
-            session.setAttribute(
-                    added ? "adminSuccess" : "adminError",
-                    added
-                            ? "Thêm người dùng thành công."
-                            : "Không thể thêm người dùng."
-            );
-
+            session.setAttribute(added ? "adminSuccess" : "adminError", added ? "Thêm người dùng thành công." : "Không thể thêm người dùng.");
             return;
         }
-
-        // =========================
-        // 2. CẬP NHẬT NGƯỜI DÙNG
-        // =========================
         if ("update".equals(action)) {
-
             String idParam = request.getParameter("userId");
-
             if (idParam == null || idParam.isBlank()) {
-                session.setAttribute(
-                        "adminError",
-                        "Thiếu mã người dùng."
-                );
+                session.setAttribute("adminError", "Thiếu mã người dùng.");
                 return;
             }
-
             int userId = Integer.parseInt(idParam.trim());
-
             User oldUser = userDao.findById(userId);
-
             if (oldUser == null) {
-                session.setAttribute(
-                        "adminError",
-                        "Không tìm thấy người dùng."
-                );
+                session.setAttribute("adminError", "Không tìm thấy người dùng.");
                 return;
             }
-
             String fullName = request.getParameter("fullName");
             String username = request.getParameter("username");
             String email = request.getParameter("email");
             String role = request.getParameter("role");
 
-            if (fullName == null || fullName.isBlank()
-                    || username == null || username.isBlank()
-                    || email == null || email.isBlank()) {
-
-                session.setAttribute(
-                        "adminError",
-                        "Vui lòng nhập đầy đủ thông tin."
-                );
+            if (fullName == null || fullName.isBlank() || username == null || username.isBlank() || email == null || email.isBlank()) {
+                session.setAttribute("adminError", "Vui lòng nhập đầy đủ thông tin.");
                 return;
             }
-
-            User user = new User(
-                    userId,
-                    fullName.trim(),
-                    username.trim(),
-                    email.trim(),
-                    oldUser.getHash_password(),
-                    role,
-                    oldUser.isIs_verified(),
-                    oldUser.getVerify_token(),
-                    oldUser.getAuth_provider(),
-                    oldUser.getPhone_number(),
-                    oldUser.getAddress(),
-                    oldUser.getAvatar_url(),
-                    oldUser.getStatus()
-            );
-
+            User user = new User(userId, fullName.trim(), username.trim(), email.trim(), oldUser.getHash_password(), role, oldUser.isIs_verified(), oldUser.getVerify_token(), oldUser.getAuth_provider(), oldUser.getPhone_number(), oldUser.getAddress(), oldUser.getAvatar_url(), oldUser.getStatus());
             boolean updated = userDao.updateAdminUser(user);
-
-            session.setAttribute(
-                    updated ? "adminSuccess" : "adminError",
-                    updated
-                            ? "Cập nhật người dùng thành công."
-                            : "Không thể cập nhật người dùng."
-            );
-
+            session.setAttribute(updated ? "adminSuccess" : "adminError", updated ? "Cập nhật người dùng thành công." : "Không thể cập nhật người dùng.");
             return;
         }
-
-        // =========================
-        // 3. KHÓA / MỞ KHÓA
-        // =========================
-        if ("toggleStatus".equals(action)
-                || "toggleUserStatus".equals(action)) {
-
+        if ("toggleStatus".equals(action) || "toggleUserStatus".equals(action)) {
             String idParam = request.getParameter("userId");
-
             if (idParam == null || idParam.isBlank()) {
-                session.setAttribute(
-                        "adminError",
-                        "Thiếu mã người dùng."
-                );
+                session.setAttribute("adminError", "Thiếu mã người dùng.");
                 return;
             }
-
-            boolean updated = userDao.toggleUserStatus(
-                    Integer.parseInt(idParam.trim())
-            );
-
-            session.setAttribute(
-                    updated ? "adminSuccess" : "adminError",
-                    updated
-                            ? "Cập nhật trạng thái người dùng thành công."
-                            : "Không thể cập nhật tài khoản này."
-            );
-
+            boolean updated = userDao.toggleUserStatus(Integer.parseInt(idParam.trim()));
+            session.setAttribute(updated ? "adminSuccess" : "adminError", updated ? "Cập nhật trạng thái người dùng thành công." : "Không thể cập nhật tài khoản này.");
             return;
         }
-
-        // =========================
-        // 4. XÓA NGƯỜI DÙNG
-        // =========================
         if ("delete".equals(action)) {
-
             String idParam = request.getParameter("userId");
-
             if (idParam == null || idParam.isBlank()) {
-                session.setAttribute(
-                        "adminError",
-                        "Thiếu mã người dùng."
-                );
+                session.setAttribute("adminError", "Thiếu mã người dùng.");
                 return;
             }
-
-            boolean deleted = userDao.deleteUser(
-                    Integer.parseInt(idParam.trim())
-            );
-
-            session.setAttribute(
-                    deleted ? "adminSuccess" : "adminError",
-                    deleted
-                            ? "Đã xóa người dùng thành công."
-                            : "Không thể xóa người dùng này."
-            );
-
+            boolean deleted = userDao.deleteUser(Integer.parseInt(idParam.trim()));
+            session.setAttribute(deleted ? "adminSuccess" : "adminError", deleted ? "Đã xóa người dùng thành công." : "Không thể xóa người dùng này.");
             return;
         }
-
-        session.setAttribute(
-                "adminError",
-                "Thao tác người dùng không hợp lệ."
-        );
+        session.setAttribute("adminError", "Thao tác người dùng không hợp lệ.");
     }
 
-    // =========================================================
-    // Quản lý sản phẩm
-    // =========================================================
-
-    private void handleProducts(
-            HttpServletRequest request,
-            HttpSession session,
-            String action
-    ) {
-
+    private void handleProducts(HttpServletRequest request, HttpSession session, String action) {
         if ("deleteProduct".equals(action)) {
-
             String idParam = request.getParameter("productId");
-
             if (idParam == null || idParam.isBlank()) {
-                session.setAttribute(
-                        "adminError",
-                        "Thiếu mã sản phẩm."
-                );
+                session.setAttribute("adminError", "Thiếu mã sản phẩm.");
                 return;
             }
-
-            boolean deleted = productDao.deleteProduct(
-                    Integer.parseInt(idParam.trim())
-            );
-
-            session.setAttribute(
-                    deleted ? "adminSuccess" : "adminError",
-                    deleted
-                            ? "Đã gỡ bài đăng khỏi hệ thống."
-                            : "Không thể gỡ bài đăng này."
-            );
+            boolean deleted = productDao.deleteProduct(Integer.parseInt(idParam.trim()));
+            session.setAttribute(deleted ? "adminSuccess" : "adminError", deleted ? "Đã gỡ bài đăng khỏi hệ thống." : "Không thể gỡ bài đăng này.");
         }
     }
 
-    // =========================================================
-    // Quản lý đơn hàng
-    // =========================================================
-
-    private void handleOrders(
-            HttpServletRequest request,
-            HttpSession session,
-            String action
-    ) {
-
+    private void handleOrders(HttpServletRequest request, HttpSession session, String action) {
         if ("cancelOrder".equals(action)) {
-
             String idParam = request.getParameter("orderId");
-
             if (idParam == null || idParam.isBlank()) {
-                session.setAttribute(
-                        "adminError",
-                        "Thiếu mã đơn hàng."
-                );
+                session.setAttribute("adminError", "Thiếu mã đơn hàng.");
                 return;
             }
-
-            boolean updated = orderDao.updateOrderStatus(
-                    Integer.parseInt(idParam.trim()),
-                    "CANCELLED"
-            );
-
-            session.setAttribute(
-                    updated ? "adminSuccess" : "adminError",
-                    updated
-                            ? "Đã hủy đơn hàng."
-                            : "Không thể hủy đơn hàng này."
-            );
+            boolean updated = orderDao.updateOrderStatus(Integer.parseInt(idParam.trim()), "CANCELLED");
+            session.setAttribute(updated ? "adminSuccess" : "adminError", updated ? "Đã hủy đơn hàng." : "Không thể hủy đơn hàng này.");
         }
     }
 
-    // =========================================================
-    // POST kiểm duyệt bài đăng
-    // =========================================================
-
-    private void handleContentReviewPost(
-            HttpServletRequest request,
-            HttpSession session,
-            String action
-    ) {
-
+    private void handleContentReviewPost(HttpServletRequest request, HttpSession session, String action) {
         String idParam = request.getParameter("productId");
-
         if (action == null || idParam == null || idParam.isBlank()) {
-            session.setAttribute(
-                    "adminError",
-                    "Thiếu thông tin thao tác kiểm duyệt."
-            );
+            session.setAttribute("adminError", "Thiếu thông tin thao tác kiểm duyệt.");
             return;
         }
-
         int productId = Integer.parseInt(idParam.trim());
         String reason = request.getParameter("reason");
 
         switch (action) {
-
             case "approve": {
-                boolean updated =
-                        productModerationDao.approveProduct(productId);
-
+                boolean updated = productModerationDao.approveProduct(productId);
                 if (updated) {
-                    session.setAttribute(
-                            "adminSuccess",
-                            "Đã duyệt bài đăng #MV-" + productId
-                                    + ". Bài đăng đã được phép hiển thị."
-                    );
+                    session.setAttribute("adminSuccess", "Đã duyệt bài đăng #MV-" + productId + ". Bài đăng đã được phép hiển thị.");
                 } else {
-                    session.setAttribute(
-                            "adminError",
-                            "Bài đăng không còn ở trạng thái chờ duyệt "
-                                    + "hoặc không tồn tại."
-                    );
+                    session.setAttribute("adminError", "Bài đăng không còn ở trạng thái chờ duyệt hoặc không tồn tại.");
                 }
                 break;
             }
-
             case "reject": {
                 if (reason == null || reason.trim().length() < 5) {
-                    session.setAttribute(
-                            "adminError",
-                            "Vui lòng nhập lý do từ chối ít nhất 5 ký tự."
-                    );
+                    session.setAttribute("adminError", "Vui lòng nhập lý do từ chối ít nhất 5 ký tự.");
                     return;
                 }
-
-                boolean updated =
-                        productModerationDao.rejectProduct(
-                                productId,
-                                reason.trim()
-                        );
-
-                session.setAttribute(
-                        updated ? "adminSuccess" : "adminError",
-                        updated
-                                ? "Đã từ chối bài đăng #MV-" + productId + "."
-                                : "Không thể từ chối bài đăng này. "
-                                + "Hãy tải lại danh sách."
-                );
+                boolean updated = productModerationDao.rejectProduct(productId, reason.trim());
+                session.setAttribute(updated ? "adminSuccess" : "adminError", updated ? "Đã từ chối bài đăng #MV-" + productId + "." : "Không thể từ chối bài đăng này. Hãy tải lại danh sách.");
                 break;
             }
-
             case "requestEdit": {
                 if (reason == null || reason.trim().length() < 5) {
-                    session.setAttribute(
-                            "adminError",
-                            "Vui lòng nêu rõ nội dung cần chỉnh sửa."
-                    );
+                    session.setAttribute("adminError", "Vui lòng nêu rõ nội dung cần chỉnh sửa.");
                     return;
                 }
-
-                boolean updated =
-                        productModerationDao.requestEdit(
-                                productId,
-                                reason.trim()
-                        );
-
-                session.setAttribute(
-                        updated ? "adminSuccess" : "adminError",
-                        updated
-                                ? "Đã gửi yêu cầu chỉnh sửa bài đăng #MV-"
-                                + productId + "."
-                                : "Không thể gửi yêu cầu chỉnh sửa."
-                );
+                boolean updated = productModerationDao.requestEdit(productId, reason.trim());
+                session.setAttribute(updated ? "adminSuccess" : "adminError", updated ? "Đã gửi yêu cầu chỉnh sửa bài đăng #MV-" + productId + "." : "Không thể gửi yêu cầu chỉnh sửa.");
                 break;
             }
-
-            default:
-                session.setAttribute(
-                        "adminError",
-                        "Hành động kiểm duyệt không hợp lệ."
-                );
-                break;
+            default: session.setAttribute("adminError", "Hành động kiểm duyệt không hợp lệ."); break;
         }
     }
 
-    // =========================================================
-    // Xử lý báo cáo
-    // =========================================================
-
-    private void handleReports(
-            HttpServletRequest request,
-            HttpSession session,
-            String action
-    ) {
-
+    private void handleReports(HttpServletRequest request, HttpSession session, String action) {
         String reportIdParam = request.getParameter("reportId");
-
         if (reportIdParam == null || reportIdParam.isBlank()) {
-            session.setAttribute(
-                    "adminError",
-                    "Thiếu mã báo cáo."
-            );
+            session.setAttribute("adminError", "Thiếu mã báo cáo.");
             return;
         }
-
         if (!"resolve".equals(action) && !"dismiss".equals(action)) {
-            session.setAttribute(
-                    "adminError",
-                    "Thao tác xử lý báo cáo không hợp lệ."
-            );
+            session.setAttribute("adminError", "Thao tác xử lý báo cáo không hợp lệ.");
             return;
         }
-
         int reportId = Integer.parseInt(reportIdParam.trim());
-
-        String status;
-
-        if ("resolve".equals(action)) {
-            status = "RESOLVED";
-        } else {
-            status = "DISMISSED";
-        }
-
+        String status = "resolve".equals(action) ? "RESOLVED" : "DISMISSED";
         String adminNote = request.getParameter("adminNote");
 
         if (adminNote == null || adminNote.trim().isEmpty()) {
@@ -857,283 +331,138 @@ public class AdminManageServlet extends HttpServlet {
             adminNote = adminNote.trim();
         }
 
-        // Lấy ID quản trị viên hiện đang đăng nhập.
         Object sessionUser = session.getAttribute("user");
-
-        if (!(sessionUser instanceof User)) {
-            sessionUser = session.getAttribute("account");
-        }
-
+        if (!(sessionUser instanceof User)) sessionUser = session.getAttribute("account");
         Integer adminId = null;
+        if (sessionUser instanceof User) adminId = ((User) sessionUser).getId();
 
-        if (sessionUser instanceof User) {
-            User admin = (User) sessionUser;
-            adminId = admin.getId();
-        }
-
-        boolean updated = reportDao.updateStatus(
-                reportId,
-                status,
-                adminNote,
-                adminId
-        );
+        boolean updated = reportDao.updateStatus(reportId, status, adminNote, adminId);
 
         if (updated) {
-            session.setAttribute(
-                    "adminSuccess",
-                    "Đã cập nhật báo cáo #RP-" + reportId + "."
-            );
+            session.setAttribute("adminSuccess", "Đã cập nhật báo cáo #RP-" + reportId + ".");
+
+            // =========================================================
+            // NẾU LÀ BÁC BỎ BÁO CÁO COMMENT -> HIỆN LẠI BÌNH LUẬN
+            // =========================================================
+            if ("DISMISSED".equals(status)) {
+                ReportItem report = reportDao.getById(reportId);
+                if (report != null && "COMMENT".equals(report.getTargetType()) && report.getTargetId() != null) {
+                    commentDao.updateCommentStatus(report.getTargetId(), "VISIBLE");
+                    session.setAttribute("adminSuccess", "Đã bác bỏ báo cáo và khôi phục hiển thị bình luận #" + report.getTargetId());
+                }
+            }
         } else {
-            session.setAttribute(
-                    "adminError",
-                    "Không thể cập nhật báo cáo. Báo cáo có thể không tồn tại "
-                            + "hoặc đã được xử lý trước đó."
-            );
+            session.setAttribute("adminError", "Không thể cập nhật báo cáo. Báo cáo có thể không tồn tại hoặc đã được xử lý trước đó.");
         }
     }
 
-    // =========================================================
-    // Hỗ trợ khách hàng
-    // =========================================================
-
-    private void handleSupport(
-            HttpServletRequest request,
-            HttpSession session
-    ) {
-
+    private void handleSupport(HttpServletRequest request, HttpSession session) {
+        // (Giữ nguyên code Support của bạn)
         String idParam = request.getParameter("ticketId");
         String status = request.getParameter("status");
-
-        if (idParam == null || idParam.isBlank()
-                || status == null || status.isBlank()) {
-
-            session.setAttribute(
-                    "adminError",
-                    "Thiếu mã yêu cầu hoặc trạng thái."
-            );
+        if (idParam == null || idParam.isBlank() || status == null || status.isBlank()) {
+            session.setAttribute("adminError", "Thiếu mã yêu cầu hoặc trạng thái.");
             return;
         }
-
-        if (!status.matches(
-                "PENDING|IN_REVIEW|RESOLVED|REJECTED|CLOSED"
-        )) {
-            session.setAttribute(
-                    "adminError",
-                    "Trạng thái yêu cầu không hợp lệ."
-            );
+        if (!status.matches("PENDING|IN_REVIEW|RESOLVED|REJECTED|CLOSED")) {
+            session.setAttribute("adminError", "Trạng thái yêu cầu không hợp lệ.");
             return;
         }
-
         int ticketId = Integer.parseInt(idParam.trim());
-
         String adminNote = request.getParameter("adminNote");
-
-        if (adminNote == null || adminNote.trim().isEmpty()) {
-            adminNote = "Xử lý theo quy trình hỗ trợ khách hàng.";
-        }
-
-        supportRequestDao.updateStatus(
-                ticketId,
-                status,
-                adminNote.trim()
-        );
-
-        session.setAttribute(
-                "adminSuccess",
-                "Đã cập nhật yêu cầu #CS-" + ticketId + "."
-        );
+        if (adminNote == null || adminNote.trim().isEmpty()) adminNote = "Xử lý theo quy trình hỗ trợ khách hàng.";
+        supportRequestDao.updateStatus(ticketId, status, adminNote.trim());
+        session.setAttribute("adminSuccess", "Đã cập nhật yêu cầu #CS-" + ticketId + ".");
     }
 
-    // =========================================================
-    // Dashboard
-    // =========================================================
-
-    private void handleCategories(
-            HttpServletRequest request,
-            HttpSession session,
-            String action
-    ) {
+    private void handleCategories(HttpServletRequest request, HttpSession session, String action) {
+        // (Giữ nguyên code Categories của bạn)
         String name = request.getParameter("categoryName");
-
         try {
             if ("add".equals(action)) {
                 if (name == null || name.trim().isEmpty()) {
-                    session.setAttribute(
-                            "adminError",
-                            "Vui lòng nhập tên danh mục."
-                    );
+                    session.setAttribute("adminError", "Vui lòng nhập tên danh mục.");
                     return;
                 }
-
                 if (categoryDao.addCategory(name)) {
-                    session.setAttribute(
-                            "adminSuccess",
-                            "Thêm danh mục thành công."
-                    );
+                    session.setAttribute("adminSuccess", "Thêm danh mục thành công.");
                 } else {
-                    session.setAttribute(
-                            "adminError",
-                            "Không thể thêm danh mục."
-                    );
+                    session.setAttribute("adminError", "Không thể thêm danh mục.");
                 }
-
             } else if ("update".equals(action)) {
                 String idParam = request.getParameter("categoryId");
-
-                if (idParam == null || idParam.isBlank()
-                        || name == null || name.trim().isEmpty()) {
-                    session.setAttribute(
-                            "adminError",
-                            "Vui lòng kiểm tra mã và tên danh mục."
-                    );
+                if (idParam == null || idParam.isBlank() || name == null || name.trim().isEmpty()) {
+                    session.setAttribute("adminError", "Vui lòng kiểm tra mã và tên danh mục.");
                     return;
                 }
-
-                boolean updated = categoryDao.updateCategory(
-                        Integer.parseInt(idParam.trim()),
-                        name
-                );
-
-                session.setAttribute(
-                        updated ? "adminSuccess" : "adminError",
-                        updated
-                                ? "Cập nhật danh mục thành công."
-                                : "Không tìm thấy danh mục cần cập nhật."
-                );
-
+                boolean updated = categoryDao.updateCategory(Integer.parseInt(idParam.trim()), name);
+                session.setAttribute(updated ? "adminSuccess" : "adminError", updated ? "Cập nhật danh mục thành công." : "Không tìm thấy danh mục cần cập nhật.");
             } else if ("delete".equals(action)) {
                 String idParam = request.getParameter("categoryId");
-
                 if (idParam == null || idParam.isBlank()) {
-                    session.setAttribute(
-                            "adminError",
-                            "Thiếu mã danh mục."
-                    );
+                    session.setAttribute("adminError", "Thiếu mã danh mục.");
                     return;
                 }
-
-                boolean deleted = categoryDao.deleteCategory(
-                        Integer.parseInt(idParam.trim())
-                );
-
-                session.setAttribute(
-                        deleted ? "adminSuccess" : "adminError",
-                        deleted
-                                ? "Đã xóa danh mục."
-                                : "Không tìm thấy danh mục cần xóa."
-                );
-
+                boolean deleted = categoryDao.deleteCategory(Integer.parseInt(idParam.trim()));
+                session.setAttribute(deleted ? "adminSuccess" : "adminError", deleted ? "Đã xóa danh mục." : "Không tìm thấy danh mục cần xóa.");
             } else {
-                session.setAttribute(
-                        "adminError",
-                        "Thao tác danh mục không hợp lệ."
-                );
+                session.setAttribute("adminError", "Thao tác danh mục không hợp lệ.");
             }
-
         } catch (NumberFormatException e) {
             session.setAttribute("adminError", "Mã danh mục không hợp lệ.");
-
         } catch (Exception e) {
             getServletContext().log("Lỗi quản lý danh mục.", e);
-
-            session.setAttribute(
-                    "adminError",
-                    "Không thể thực hiện thao tác. "
-                            + "Tên danh mục có thể đã tồn tại."
-            );
+            session.setAttribute("adminError", "Không thể thực hiện thao tác. Tên danh mục có thể đã tồn tại.");
         }
     }
-    private void loadDashboard(HttpServletRequest request) {
-        DashboardData data;
 
+    private void loadDashboard(HttpServletRequest request) {
+        // (Giữ nguyên code Dashboard của bạn)
+        DashboardData data;
         try {
-            data = dashboardService.load(
-                    request.getParameter("from"),
-                    request.getParameter("to"),
-                    request.getParameter("status"),
-                    request.getParameter("page")
-            );
+            data = dashboardService.load(request.getParameter("from"), request.getParameter("to"), request.getParameter("status"), request.getParameter("page"));
         } catch (Exception e) {
             getServletContext().log("Dashboard load failed", e);
-            data = dashboardService.empty(
-                    "Không tải được dữ liệu Dashboard."
-            );
+            data = dashboardService.empty("Không tải được dữ liệu Dashboard.");
         }
-
         request.setAttribute("dash", data);
         request.setAttribute("chartJson", buildChartJson(data));
     }
 
     private String buildChartJson(DashboardData data) {
-
+        // (Giữ nguyên code Build Chart của bạn)
         List<String> labels = new ArrayList<>();
         List<Double> values = new ArrayList<>();
-
         if (data != null && data.getEscrowByDay() != null) {
             for (DashboardChartPoint point : data.getEscrowByDay()) {
-                if (point.getValue() == null) {
-                    continue;
-                }
-
-                String label = point.getDay() != null
-                        ? point.getDay().toString()
-                        : "";
-
-                if (label.isEmpty()) {
-                    continue;
-                }
-
+                if (point.getValue() == null) continue;
+                String label = point.getDay() != null ? point.getDay().toString() : "";
+                if (label.isEmpty()) continue;
                 labels.add(label);
                 values.add(point.getValue().doubleValue());
             }
         }
-
         List<Map<String, Object>> categories = new ArrayList<>();
-
         if (data.getCategoryShares() != null) {
-            for (DashboardCategoryShare category
-                    : data.getCategoryShares()) {
-
-                if (category.getName() == null
-                        || category.getValue() == null) {
-                    continue;
-                }
-
+            for (DashboardCategoryShare category : data.getCategoryShares()) {
+                if (category.getName() == null || category.getValue() == null) continue;
                 Map<String, Object> item = new LinkedHashMap<>();
-
                 item.put("name", category.getName());
                 item.put("value", category.getValue().doubleValue());
                 item.put("percent", category.getPercent());
-
                 categories.add(item);
             }
         }
-
         Map<String, Object> root = new LinkedHashMap<>();
-
         root.put("labels", labels);
         root.put("values", values);
         root.put("categories", categories);
-
         return gson.toJson(root);
     }
 
-    // =========================================================
-    // Chuẩn hóa tab để tránh chuyển hướng tới tab không hợp lệ
-    // =========================================================
-
     private static String normalizeTab(String tab) {
-
-        if (tab == null || tab.isBlank()) {
-            return DEFAULT_TAB;
-        }
-
+        if (tab == null || tab.isBlank()) return DEFAULT_TAB;
         tab = tab.trim();
-
-        if (TABS.contains(tab)) {
-            return tab;
-        }
-
-        return DEFAULT_TAB;
+        return TABS.contains(tab) ? tab : DEFAULT_TAB;
     }
 }

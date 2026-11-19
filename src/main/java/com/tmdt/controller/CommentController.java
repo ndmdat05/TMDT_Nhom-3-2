@@ -2,8 +2,10 @@ package com.tmdt.controller;
 
 import com.tmdt.Dao.CommentDao;
 import com.tmdt.Dao.ProductDao;
+import com.tmdt.Dao.ReportDao;
 import com.tmdt.Model.Comment;
 import com.tmdt.Model.Product;
+import com.tmdt.Model.ReportItem;
 import com.tmdt.Model.User;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -20,10 +22,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
-/**
- * Xử lý bình luận ở trang chi tiết sản phẩm.
- * Tích hợp AI phân tích cảm xúc (Sentiment Analysis) cho bình luận.
- */
 @WebServlet(name = "CommentController", urlPatterns = {"/comment"})
 public class CommentController extends HttpServlet {
 
@@ -32,6 +30,7 @@ public class CommentController extends HttpServlet {
 
     private final CommentDao commentDao = new CommentDao();
     private final ProductDao productDao = new ProductDao();
+    private final ReportDao reportDao = new ReportDao();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -87,7 +86,6 @@ public class CommentController extends HttpServlet {
         redirectBack(request, response, productId, anchor);
     }
 
-    /** Trả về id phần tử để trang cuộn tới sau khi redirect. */
     private String handleAdd(HttpServletRequest request, HttpSession session, User user,
                              Product product, boolean isReply) {
         String content = request.getParameter("content");
@@ -118,7 +116,6 @@ public class CommentController extends HttpServlet {
             }
         }
 
-        // 👉 PHÂN TÍCH CẢM XÚC: Chỉ phân tích bình luận gốc, câu trả lời mặc định là NEUTRAL
         String sentiment = "NEUTRAL";
         Double confidence = 1.0;
         if (!isReply) {
@@ -127,7 +124,33 @@ public class CommentController extends HttpServlet {
             confidence = result.confidence;
         }
 
-        int newId = commentDao.addComment(product.getId(), user.getId(), parentId, content, sentiment, confidence);
+        // ==========================================
+        // XỬ LÝ LOGIC TOXIC: ẨN VÀ BÁO CÁO
+        // ==========================================
+        if ("TOXIC".equals(sentiment)) {
+            // 1. Lưu comment ở trạng thái HIDDEN
+            int newId = commentDao.addComment(product.getId(), user.getId(), parentId, content, sentiment, confidence, "HIDDEN");
+
+            if (newId > 0) {
+                // 2. Tạo báo cáo gửi Admin
+                ReportItem report = new ReportItem();
+                report.setReporterId(user.getId()); // Dùng ID của user để tránh lỗi khóa ngoại (thay vì 0)
+                report.setReportedId(user.getId()); // Người vi phạm
+                report.setTargetType("COMMENT");
+                report.setTargetId(newId);
+                report.setTargetTitle("Bình luận vi phạm tại sản phẩm #" + product.getId());
+                report.setReasonType("TOXIC_LANGUAGE");
+                report.setDescription("Hệ thống AI phát hiện ngôn từ độc hại: \"" + content + "\"");
+                report.setStatus("PENDING");
+                reportDao.insertReport(report);
+            }
+
+            flash(session, "error", "Bình luận chứa ngôn từ độc hại đã bị ẩn và chuyển cho Admin xử lý!");
+            return "tab-comments";
+        }
+
+        // XỬ LÝ BÌNH THƯỜNG
+        int newId = commentDao.addComment(product.getId(), user.getId(), parentId, content, sentiment, confidence, "VISIBLE");
         if (newId > 0) {
             flash(session, "success", isReply ? "Đã gửi câu trả lời." : "Đã đăng bình luận.");
             return "comment-" + newId;
@@ -163,9 +186,6 @@ public class CommentController extends HttpServlet {
         }
     }
 
-    // ==============================================================
-    // KẾT NỐI SANG PYTHON SERVICE (FASTAPI / PHOBERT)
-    // ==============================================================
     private static class SentimentResult {
         String sentiment;
         Double confidence;
@@ -182,11 +202,10 @@ public class CommentController extends HttpServlet {
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
             conn.setRequestProperty("Accept", "application/json");
-            conn.setConnectTimeout(3000); // 1.5s timeout nếu Python chưa bật
+            conn.setConnectTimeout(3000);
             conn.setReadTimeout(5000);
             conn.setDoOutput(true);
 
-            // Escape chuỗi JSON an toàn
             String safeText = text.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", " ");
             String jsonInput = "{\"text\": \"" + safeText + "\"}";
 
@@ -204,7 +223,10 @@ public class CommentController extends HttpServlet {
                     }
                     String res = response.toString();
 
-                    // Parse nhanh JSON kết quả {"sentiment":"POSITIVE", ...}
+                    if (res.contains("\"TOXIC\"")) {
+                        return new SentimentResult("TOXIC", 1.0);
+                    }
+
                     String sentiment = "NEUTRAL";
                     if (res.contains("\"POSITIVE\"")) sentiment = "POSITIVE";
                     else if (res.contains("\"NEGATIVE\"")) sentiment = "NEGATIVE";
@@ -219,14 +241,14 @@ public class CommentController extends HttpServlet {
                 }
             }
         } catch (Exception e) {
-            // Khi chưa chạy server Python: Dự phòng bằng từ khóa cơ bản để bạn test web trước
             String lower = text.toLowerCase();
-            if (lower.contains("đẹp") || lower.contains("thích") || lower.contains("ưng") || lower.contains("tốt")
-                    || lower.contains("mê") || lower.contains("nhanh") || lower.contains("khen") || lower.contains("tuyệt")) {
+            if (lower.contains("ngu") || lower.contains("đần") || lower.contains("chó") || lower.contains("c*c")) {
+                return new SentimentResult("TOXIC", 1.0);
+            }
+            if (lower.contains("đẹp") || lower.contains("thích") || lower.contains("tốt") || lower.contains("tuyệt")) {
                 return new SentimentResult("POSITIVE", 0.90);
             }
-            if (lower.contains("rách") || lower.contains("tệ") || lower.contains("chán") || lower.contains("xấu")
-                    || lower.contains("mờ") || lower.contains("lừa") || lower.contains("hỏng") || lower.contains("thất vọng")) {
+            if (lower.contains("rách") || lower.contains("tệ") || lower.contains("lừa") || lower.contains("hỏng")) {
                 return new SentimentResult("NEGATIVE", 0.90);
             }
         }
