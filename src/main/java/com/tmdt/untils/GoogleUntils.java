@@ -7,8 +7,9 @@ import org.apache.http.client.fluent.Form;
 import org.apache.http.client.fluent.Request;
 
 import java.io.IOException;
+
 public class GoogleUntils {
-    public static final String GOOGLE_CLIENT_ID = "";
+    public static final String GOOGLE_CLIENT_ID = "958456943926-m34dqn46je27g0vu8mm7vqdfqoh9hb8o.apps.googleusercontent.com";
     public static final String GOOGLE_CLIENT_SECRET = "";
     public static final String GOOGLE_REDIRECT_URI = "http://localhost:8080/TMDT_Nhom_3_2_war/google-login";
     public static final String GOOGLE_LINK_GET_TOKEN = "https://oauth2.googleapis.com/token";
@@ -76,11 +77,12 @@ public class GoogleUntils {
         if (googleUser.has("name")
                 && !googleUser.get("name").isJsonNull()) {
             fullname = googleUser.get("name").getAsString();
+
         }
 
         User user = new User(
                 fullname,
-                null,
+                fullname,
                 email,
                 null,
                 "BUYER",
@@ -91,7 +93,6 @@ public class GoogleUntils {
                 "",
                 "ACTIVE"
         );
-
 
 
         return user;
