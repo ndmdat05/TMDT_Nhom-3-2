@@ -58,95 +58,99 @@
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
 
         <aside class="lg:col-span-1">
-            <div class="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm sticky top-24">
-                <div class="flex items-center justify-between pb-4 mb-5 border-b border-gray-100">
-                    <h3 class="font-extrabold text-gray-900 flex items-center gap-2 text-base">
+            <div class="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm sticky top-24">
+                <div class="flex items-center justify-between pb-3 mb-4 border-b border-gray-100">
+                    <h3 class="font-extrabold text-gray-900 flex items-center gap-2 text-sm">
                         <i class="fas fa-filter text-indigo-600"></i> Bộ Lọc Tìm Kiếm
                     </h3>
                     <a href="${pageContext.request.contextPath}/product-list" class="text-xs font-bold text-indigo-600 hover:underline">Đặt lại</a>
                 </div>
 
-                <form action="${pageContext.request.contextPath}/product-list" method="GET" class="space-y-5">
+                <form action="${pageContext.request.contextPath}/product-list" method="GET" class="space-y-3.5">
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Nhà Xuất Bản</label>
+                        <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Nhà Xuất Bản</label>
                         <div class="relative">
-                            <i class="fas fa-building absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                            <i class="fas fa-building absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
                             <input type="text" name="publisher" value="${param.publisher}" placeholder="Nhập nhà xuất bản..."
-                                   class="w-full bg-indigo-50/30 border border-gray-200 text-gray-900 text-xs rounded-xl pl-9 pr-3 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                                   class="w-full bg-indigo-50/30 border border-gray-200 text-gray-900 text-xs rounded-xl pl-8 pr-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Tên Người Bán / Shop</label>
+                        <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Tên Người Bán / Shop</label>
                         <div class="relative">
-                            <i class="fas fa-store absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                            <i class="fas fa-store absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
                             <input type="text" name="seller" value="${param.seller}" placeholder="Nhập tên shop..."
-                                   class="w-full bg-indigo-50/30 border border-gray-200 text-gray-900 text-xs rounded-xl pl-9 pr-3 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                                   class="w-full bg-indigo-50/30 border border-gray-200 text-gray-900 text-xs rounded-xl pl-8 pr-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Tình Trạng</label>
+                            <select name="condition" class="w-full bg-indigo-50/30 border border-gray-200 text-gray-900 text-xs rounded-xl px-2.5 py-2 outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="">Tất cả</option>
+                                <c:forEach var="cond" items="${conditionList}">
+                                    <option value="${cond}" ${param.condition == cond ? 'selected' : ''}>
+                                        <c:choose>
+                                            <c:when test="${cond == 'NEW'}">Mới 100%</c:when>
+                                            <c:when test="${cond == 'LIKE_NEW'}">Like New</c:when>
+                                            <c:when test="${cond == 'USED'}">Đã dùng</c:when>
+                                            <c:otherwise>${cond}</c:otherwise>
+                                        </c:choose>
+                                    </option>
+                                </c:forEach>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Ngôn Ngữ</label>
+                            <select name="language" class="w-full bg-indigo-50/30 border border-gray-200 text-gray-900 text-xs rounded-xl px-2.5 py-2 outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="">Tất cả</option>
+                                <c:forEach var="lang" items="${languageList}">
+                                    <option value="${lang}" ${param.language == lang ? 'selected' : ''}>
+                                            ${lang}
+                                    </option>
+                                </c:forEach>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Thể Loại</label>
+                            <select name="categoryId" class="w-full bg-indigo-50/30 border border-gray-200 text-gray-900 text-xs rounded-xl px-2.5 py-2 outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="">Tất cả</option>
+                                <c:forEach var="cat" items="${categoryList}">
+                                    <option value="${cat.id}" ${param.categoryId == cat.id ? 'selected' : ''}>
+                                            ${cat.name}
+                                    </option>
+                                </c:forEach>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Sắp Xếp</label>
+                            <select name="sort" class="w-full bg-indigo-50/30 border border-gray-200 text-gray-900 text-xs rounded-xl px-2.5 py-2 outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="newest" ${param.sort == 'newest' ? 'selected' : ''}>Mới nhất</option>
+                                <option value="price_asc" ${param.sort == 'price_asc' ? 'selected' : ''}>Giá tăng</option>
+                                <option value="price_desc" ${param.sort == 'price_desc' ? 'selected' : ''}>Giá giảm</option>
+                                <option value="popular" ${param.sort == 'popular' ? 'selected' : ''}>Phổ biến</option>
+                            </select>
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Tình Trạng</label>
-                        <select name="condition" class="w-full bg-indigo-50/30 border border-gray-200 text-gray-900 text-xs rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500">
-                            <option value="">Tất cả tình trạng</option>
-                            <c:forEach var="cond" items="${conditionList}">
-                                <option value="${cond}" ${param.condition == cond ? 'selected' : ''}>
-                                    <c:choose>
-                                        <c:when test="${cond == 'NEW'}">Mới 100% (NEW)</c:when>
-                                        <c:when test="${cond == 'LIKE_NEW'}">Like New (Sưu tầm)</c:when>
-                                        <c:when test="${cond == 'USED'}">Đã qua sử dụng (USED)</c:when>
-                                        <c:otherwise>${cond}</c:otherwise>
-                                    </c:choose>
-                                </option>
-                            </c:forEach>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Ngôn Ngữ Ấn Bản</label>
-                        <select name="language" class="w-full bg-indigo-50/30 border border-gray-200 text-gray-900 text-xs rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500">
-                            <option value="">Tất cả ngôn ngữ</option>
-                            <c:forEach var="lang" items="${languageList}">
-                                <option value="${lang}" ${param.language == lang ? 'selected' : ''}>
-                                        ${lang}
-                                </option>
-                            </c:forEach>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Thể Loại</label>
-                        <select name="categoryId" class="w-full bg-indigo-50/30 border border-gray-200 text-gray-900 text-xs rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500">
-                            <option value="">Tất cả thể loại</option>
-                            <c:forEach var="cat" items="${categoryList}">
-                                <option value="${cat.id}" ${param.categoryId == cat.id ? 'selected' : ''}>
-                                        ${cat.name}
-                                </option>
-                            </c:forEach>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Khoảng Giá (VNĐ)</label>
+                        <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">Khoảng Giá (VNĐ)</label>
                         <div class="grid grid-cols-2 gap-2">
                             <input type="number" name="minPrice" value="${param.minPrice}" placeholder="Từ giá"
-                                   class="w-full bg-indigo-50/30 border border-gray-200 text-gray-900 text-xs rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500">
+                                   class="w-full bg-indigo-50/30 border border-gray-200 text-gray-900 text-xs rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500">
                             <input type="number" name="maxPrice" value="${param.maxPrice}" placeholder="Đến giá"
-                                   class="w-full bg-indigo-50/30 border border-gray-200 text-gray-900 text-xs rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500">
+                                   class="w-full bg-indigo-50/30 border border-gray-200 text-gray-900 text-xs rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500">
                         </div>
                     </div>
 
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Sắp Xếp Theo</label>
-                        <select name="sort" class="w-full bg-indigo-50/30 border border-gray-200 text-gray-900 text-xs rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500">
-                            <option value="newest" ${param.sort == 'newest' ? 'selected' : ''}>Cập nhật mới nhất</option>
-                            <option value="price_asc" ${param.sort == 'price_asc' ? 'selected' : ''}>Giá: Thấp đến Cao</option>
-                            <option value="price_desc" ${param.sort == 'price_desc' ? 'selected' : ''}>Giá: Cao xuống Thấp</option>
-                            <option value="popular" ${param.sort == 'popular' ? 'selected' : ''}>Phổ biến / Sưu tầm nổi bật</option>
-                        </select>
-                    </div>
-
-                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs py-3 rounded-xl shadow-md transition flex items-center justify-center gap-2">
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs py-2.5 rounded-xl shadow-md transition flex items-center justify-center gap-2">
                         <i class="fas fa-check"></i> Áp Dụng Lọc
                     </button>
                 </form>
