@@ -12,7 +12,6 @@ public class CommentDao {
 
     private static volatile boolean tableChecked = false;
 
-    /** Tự tạo bảng nếu chưa có (an toàn khi chạy nhiều lần). */
     private void ensureTable() {
         if (tableChecked) return;
         synchronized (CommentDao.class) {
@@ -23,6 +22,8 @@ public class CommentDao {
                     + "user_id INT NOT NULL, "
                     + "parent_id INT NULL, "
                     + "content VARCHAR(1000) NOT NULL, "
+                    + "sentiment VARCHAR(20) NOT NULL DEFAULT 'NEUTRAL', "
+                    + "confidence_score DECIMAL(5, 4) NULL, "
                     + "status VARCHAR(20) NOT NULL DEFAULT 'VISIBLE', "
                     + "created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, "
                     + "INDEX idx_pc_product (product_id, status, created_at), "
@@ -38,11 +39,10 @@ public class CommentDao {
         }
     }
 
-    /** Thêm bình luận gốc (parentId = null) hoặc câu trả lời. Trả về id mới, -1 nếu lỗi. */
-    public int addComment(int productId, int userId, Integer parentId, String content) {
+    public int addComment(int productId, int userId, Integer parentId, String content, String sentiment, Double confidenceScore, String status) {
         ensureTable();
-        String sql = "INSERT INTO product_comments (product_id, user_id, parent_id, content, status, created_at) "
-                + "VALUES (:productId, :userId, :parentId, :content, 'VISIBLE', NOW())";
+        String sql = "INSERT INTO product_comments (product_id, user_id, parent_id, content, sentiment, confidence_score, status, created_at) "
+                + "VALUES (:productId, :userId, :parentId, :content, :sentiment, :confidenceScore, :status, NOW())";
         try {
             return JDBIConnector.get().withHandle(h ->
                     h.createUpdate(sql)
@@ -50,6 +50,9 @@ public class CommentDao {
                             .bind("userId", userId)
                             .bind("parentId", parentId)
                             .bind("content", content)
+                            .bind("sentiment", (sentiment != null ? sentiment : "NEUTRAL"))
+                            .bind("confidenceScore", confidenceScore)
+                            .bind("status", status != null ? status : "VISIBLE")
                             .executeAndReturnGeneratedKeys("id")
                             .mapTo(Integer.class)
                             .one()
@@ -60,11 +63,18 @@ public class CommentDao {
         }
     }
 
-    /** Lấy 1 bình luận (chưa bị xoá) theo id. */
+    public int addComment(int productId, int userId, Integer parentId, String content, String sentiment, Double confidenceScore) {
+        return addComment(productId, userId, parentId, content, sentiment, confidenceScore, "VISIBLE");
+    }
+
+    public int addComment(int productId, int userId, Integer parentId, String content) {
+        return addComment(productId, userId, parentId, content, "NEUTRAL", 1.0, "VISIBLE");
+    }
+
     public Comment getById(int id) {
         ensureTable();
         String sql = "SELECT id, product_id AS productId, user_id AS userId, parent_id AS parentId, "
-                + "content, status, created_at AS createdAt "
+                + "content, sentiment, confidence_score AS confidenceScore, status, created_at AS createdAt "
                 + "FROM product_comments WHERE id = :id AND status = 'VISIBLE'";
         try {
             return JDBIConnector.get().withHandle(h ->
@@ -76,16 +86,10 @@ public class CommentDao {
         }
     }
 
-    /**
-     * Lấy toàn bộ bình luận của sản phẩm dạng CÂY KHÔNG GIỚI HẠN TẦNG,
-     * trả về danh sách phẳng theo thứ tự duyệt cây (cha đứng trước con),
-     * mỗi phần tử có depth để JSP thụt lề.
-     * Bình luận gốc: mới nhất trước. Các trả lời: cũ nhất trước.
-     */
     public List<Comment> getCommentsByProduct(int productId) {
         ensureTable();
         String sql = "SELECT c.id, c.product_id AS productId, c.user_id AS userId, c.parent_id AS parentId, "
-                + "       c.content, c.status, c.created_at AS createdAt, "
+                + "       c.content, c.sentiment, c.confidence_score AS confidenceScore, c.status, c.created_at AS createdAt, "
                 + "       COALESCE(NULLIF(u.full_name, ''), u.username, 'Người dùng') AS userName, "
                 + "       u.role AS userRole, u.avatar_url AS userAvatar, "
                 + "       (c.user_id = p.seller_id) AS productSeller "
@@ -111,12 +115,12 @@ public class CommentDao {
         for (Comment c : all) {
             Integer pid = c.getParentId();
             if (pid == null || !byId.containsKey(pid)) {
-                roots.add(c); // gốc (hoặc mồ côi -> coi như gốc)
+                roots.add(c);
             } else {
                 children.computeIfAbsent(pid, k -> new ArrayList<>()).add(c);
             }
         }
-        java.util.Collections.reverse(roots); // gốc mới nhất lên đầu
+        java.util.Collections.reverse(roots);
 
         List<Comment> flat = new ArrayList<>();
         for (Comment root : roots) {
@@ -126,7 +130,6 @@ public class CommentDao {
         return flat;
     }
 
-    // Duyệt DFS bằng stack (tránh đệ quy quá sâu với chuỗi trả lời rất dài)
     private void flatten(Comment root, Map<Integer, List<Comment>> children,
                          Map<Integer, Comment> byId, List<Comment> out) {
         java.util.Deque<Comment> stack = new java.util.ArrayDeque<>();
@@ -136,7 +139,6 @@ public class CommentDao {
             out.add(cur);
             List<Comment> kids = children.get(cur.getId());
             if (kids == null) continue;
-            // push ngược để con cũ nhất được pop trước
             for (int i = kids.size() - 1; i >= 0; i--) {
                 Comment k = kids.get(i);
                 k.setDepth(cur.getDepth() + 1);
@@ -147,7 +149,6 @@ public class CommentDao {
         }
     }
 
-    /** Đếm số bình luận (gốc + trả lời) đang hiển thị của sản phẩm. */
     public int countByProduct(int productId) {
         ensureTable();
         String sql = "SELECT COUNT(*) FROM product_comments WHERE product_id = :productId AND status = 'VISIBLE'";
@@ -160,7 +161,6 @@ public class CommentDao {
         }
     }
 
-    /** Xoá mềm bình luận và TOÀN BỘ các trả lời con cháu của nó (mọi tầng). */
     public boolean deleteComment(int id, int productId) {
         ensureTable();
         try {
@@ -186,6 +186,47 @@ public class CommentDao {
                         .bindList("ids", toDelete)
                         .execute() > 0;
             });
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public List<Comment> getCommentsForAdmin(String sentimentFilter) {
+        ensureTable();
+        StringBuilder sql = new StringBuilder(
+                "SELECT c.id, c.product_id AS productId, c.user_id AS userId, c.content, c.sentiment, "
+                        + "c.confidence_score AS confidenceScore, c.status, c.created_at AS createdAt, "
+                        + "COALESCE(NULLIF(u.full_name, ''), u.username, 'Người dùng') AS userName "
+                        + "FROM product_comments c LEFT JOIN users u ON c.user_id = u.id WHERE 1=1 "
+        );
+        if (sentimentFilter != null && !sentimentFilter.trim().isEmpty()) {
+            sql.append(" AND c.sentiment = :sentiment ");
+        }
+        sql.append(" ORDER BY c.created_at DESC");
+
+        return JDBIConnector.get().withHandle(handle -> {
+            var query = handle.createQuery(sql.toString());
+            if (sentimentFilter != null && !sentimentFilter.trim().isEmpty()) {
+                query.bind("sentiment", sentimentFilter);
+            }
+            return query.mapToBean(Comment.class).list();
+        });
+    }
+
+    // ==============================================================
+    // HÀM MỚI: Admin bác bỏ báo cáo -> Khôi phục bình luận
+    // ==============================================================
+    public boolean updateCommentStatus(int commentId, String newStatus) {
+        ensureTable();
+        String sql = "UPDATE product_comments SET status = :status WHERE id = :id";
+        try {
+            return JDBIConnector.get().withHandle(h ->
+                    h.createUpdate(sql)
+                            .bind("status", newStatus)
+                            .bind("id", commentId)
+                            .execute() > 0
+            );
         } catch (Exception e) {
             e.printStackTrace();
             return false;

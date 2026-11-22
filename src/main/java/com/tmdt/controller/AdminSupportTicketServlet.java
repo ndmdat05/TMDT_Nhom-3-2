@@ -9,43 +9,100 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
-@WebServlet(name = "AdminSupportTicketServlet", urlPatterns = {"/admin/support-center"})
+@WebServlet(
+        name = "AdminSupportTicketServlet",
+        urlPatterns = {"/admin/support-center"}
+)
 public class AdminSupportTicketServlet extends HttpServlet {
-    private final SupportRequestDao supportRequestDao = new SupportRequestDao();
+
+    private final SupportRequestDao supportRequestDao =
+            new SupportRequestDao();
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        request.setCharacterEncoding("UTF-8");
-        request.setAttribute("tickets", supportRequestDao.getAllTickets());
-        request.setAttribute("pendingCount", supportRequestDao.countPending());
-        request.setAttribute("inReviewCount", supportRequestDao.countInReview());
-        request.getRequestDispatcher("/support-center.jsp").forward(request, response);
+    protected void doGet(
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) throws ServletException, IOException {
+
+        response.sendRedirect(
+                request.getContextPath()
+                        + "/admin/manage?tab=support-center"
+        );
     }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doPost(
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) throws ServletException, IOException {
+
         request.setCharacterEncoding("UTF-8");
-        String redirect = request.getContextPath() + "/admin/support-center";
+
+        String redirect = request.getContextPath()
+                + "/admin/manage?tab=support-center";
+
         try {
-            String ticketIdParam = request.getParameter("ticketId");
+            String ticketIdRaw = request.getParameter("ticketId");
             String status = request.getParameter("status");
-            if (ticketIdParam == null || ticketIdParam.isBlank() || status == null || status.isBlank()) {
-                response.sendRedirect(redirect);
-                return;
+
+            if (ticketIdRaw == null || ticketIdRaw.trim().isEmpty()) {
+                throw new IllegalArgumentException(
+                        "Mã yêu cầu hỗ trợ không hợp lệ."
+                );
             }
-            int ticketId = Integer.parseInt(ticketIdParam.trim());
-            if (!status.matches("PENDING|IN_REVIEW|RESOLVED|REJECTED|CLOSED")) {
-                response.sendRedirect(redirect);
-                return;
+
+            int ticketId = Integer.parseInt(ticketIdRaw.trim());
+
+            if (status == null
+                    || !status.matches(
+                    "PENDING|IN_REVIEW|RESOLVED|REJECTED|CLOSED")) {
+
+                throw new IllegalArgumentException(
+                        "Trạng thái hỗ trợ không hợp lệ."
+                );
             }
+
             String adminNote = request.getParameter("adminNote");
+
             if (adminNote == null || adminNote.trim().isEmpty()) {
-                adminNote = "Xử lý theo hỗ trợ khách hàng";
+                adminNote = "Đã cập nhật yêu cầu hỗ trợ.";
             }
-            supportRequestDao.updateStatus(ticketId, status, adminNote);
+
+            supportRequestDao.updateStatus(
+                    ticketId,
+                    status,
+                    adminNote
+            );
+
+            request.getSession().setAttribute(
+                    "adminSuccess",
+                    "Đã cập nhật yêu cầu hỗ trợ."
+            );
+
         } catch (NumberFormatException e) {
-            // ID không hợp lệ
+            request.getSession().setAttribute(
+                    "adminError",
+                    "Mã yêu cầu hỗ trợ không hợp lệ."
+            );
+
+        } catch (IllegalArgumentException e) {
+            request.getSession().setAttribute(
+                    "adminError",
+                    e.getMessage()
+            );
+
+        } catch (Exception e) {
+            getServletContext().log(
+                    "Lỗi xử lý yêu cầu hỗ trợ.",
+                    e
+            );
+
+            request.getSession().setAttribute(
+                    "adminError",
+                    "Không thể cập nhật yêu cầu hỗ trợ."
+            );
         }
+
         response.sendRedirect(redirect);
     }
 }

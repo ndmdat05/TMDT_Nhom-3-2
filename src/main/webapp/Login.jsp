@@ -77,7 +77,7 @@
                 </div>
 
                 <div class="social-login">
-                    <a href="https://accounts.google.com/o/oauth2/auth?scope=email%20profile&redirect_uri=http://localhost:8080${pageContext.request.contextPath}/google-login&response_type=code&client_id=918892325001-opqt9q70e7q7n0qstli2a3qqi8kb1rts.apps.googleusercontent.com&approval_prompt=force"
+                    <a href="https://accounts.google.com/o/oauth2/auth?scope=email%20profile&redirect_uri=http://localhost:8080${pageContext.request.contextPath}/google-login&response_type=code&client_id=958456943926-m34dqn46je27g0vu8mm7vqdfqoh9hb8o.apps.googleusercontent.com&approval_prompt=force"
                        class="btn-social"
                        style="text-decoration: none; display: flex; align-items: center; justify-content: center;">
                         <img src="Image/googleLogo.svg" alt="G"> Tiếp tục với Google

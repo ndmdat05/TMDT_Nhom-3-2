@@ -72,4 +72,28 @@ public class SupportRequestDao {
         String sql = "SELECT COUNT(*) FROM support_requests WHERE status = 'IN_REVIEW'";
         return jdbi.withHandle(handle -> handle.createQuery(sql).mapTo(Integer.class).one());
     }
+
+    public int countResolved() {
+        String sql =
+                "SELECT COUNT(*) FROM support_requests " +
+                        "WHERE status = 'RESOLVED'";
+
+        return jdbi.withHandle(handle ->
+                handle.createQuery(sql)
+                        .mapTo(Integer.class)
+                        .one()
+        );
+    }
+
+    public int countAll() {
+        String sql =
+                "SELECT COUNT(*) FROM support_requests";
+
+        return jdbi.withHandle(handle ->
+                handle.createQuery(sql)
+                        .mapTo(Integer.class)
+                        .one()
+        );
+    }
+
 }

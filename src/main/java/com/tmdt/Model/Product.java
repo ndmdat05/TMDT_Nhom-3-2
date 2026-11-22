@@ -18,7 +18,13 @@ public class Product {
     private String sellerAvatar;
     private String status;
     private String rejectionReason;
-
+    private String publisherName;
+    private int categories_id;
+    private String categoriesName;
+    private Integer brandId;
+    private boolean isAuction;
+    public Integer getBrandId() { return brandId; }
+    public void setBrandId(Integer brandId) { this.brandId = brandId; }
     public Product() {}
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
@@ -95,4 +101,30 @@ public class Product {
 
     public String getImage() { return imageUrl; }
     public void setImage(String image) { this.imageUrl = image; }
+
+    public String getPublisherName() {
+        return publisherName;
+    }
+
+    public void setPublisherName(String publisherName) {
+        this.publisherName = publisherName;
+    }
+
+    public int getCategories_id() {
+        return categories_id;
+    }
+
+    public void setCategories_id(int categories_id) {
+        this.categories_id = categories_id;
+    }
+
+    public String getCategoriesName() {
+        return categoriesName;
+    }
+
+    public void setCategoriesName(String categoriesName) {
+        this.categoriesName = categoriesName;
+    }
+    public boolean isAuction() { return isAuction; }
+    public void setAuction(boolean isAuction) { this.isAuction = isAuction; }
 }

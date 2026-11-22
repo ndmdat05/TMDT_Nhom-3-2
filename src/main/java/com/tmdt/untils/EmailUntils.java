@@ -7,7 +7,7 @@ import jakarta.mail.internet.MimeMessage;
 import java.util.Properties;
 
 public class EmailUntils {
-    private static final String MY_EMAIL = "";
+    private static final String MY_EMAIL = "zuzusl123@gmail.com";
     private static final String MY_APP_PASSWORD = "";
 
     public static void sendMail(String toEmail, String subject, String content) throws Exception {
