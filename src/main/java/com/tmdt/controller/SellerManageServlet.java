@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -54,24 +55,26 @@ public class SellerManageServlet extends HttpServlet {
         String action = request.getParameter("action");
         if (action == null || action.trim().isEmpty()) action = "products";
 
-        // ---- EDIT ----
-        if ("edit".equals(action)) {
-            try {
-                int productId = Integer.parseInt(request.getParameter("id"));
-                Product product = productDao.getProductForSeller(productId, acc.getId());
-                if (product == null) {
+        // ---- EDIT / ADD ----
+        if ("edit".equals(action) || "add".equals(action)) {
+            if ("edit".equals(action)) {
+                try {
+                    int productId = Integer.parseInt(request.getParameter("id"));
+                    Product product = productDao.getProductForSeller(productId, acc.getId());
+                    if (product == null) {
+                        response.sendRedirect(request.getContextPath() + "/seller-manage?action=products");
+                        return;
+                    }
+                    request.setAttribute("product", product);
+                } catch (NumberFormatException e) {
                     response.sendRedirect(request.getContextPath() + "/seller-manage?action=products");
                     return;
                 }
-                request.setAttribute("product", product);
-                request.setAttribute("categoryList", loadCategories());
-                request.setAttribute("brandList", loadBrands());
-                request.getRequestDispatcher("/seller-edit-product.jsp").forward(request, response);
-                return;
-            } catch (NumberFormatException e) {
-                response.sendRedirect(request.getContextPath() + "/seller-manage?action=products");
-                return;
             }
+            request.setAttribute("categoryList", loadCategories());
+            request.setAttribute("brandList", loadBrands());
+            request.getRequestDispatcher("/seller-edit-product.jsp").forward(request, response);
+            return;
         }
 
         // ---- LIST ----
@@ -83,30 +86,18 @@ public class SellerManageServlet extends HttpServlet {
         List<Order> sellerOrders;
         switch (action.toLowerCase()) {
             case "cancelled":
-                sellerOrders = allOrders.stream()
-                        .filter(o -> "CANCELLED".equalsIgnoreCase(o.getStatus()))
-                        .collect(Collectors.toList());
+                sellerOrders = allOrders.stream().filter(o -> "CANCELLED".equalsIgnoreCase(o.getStatus())).collect(Collectors.toList());
                 break;
             case "refunds":
-                sellerOrders = allOrders.stream()
-                        .filter(o -> "REFUND".equalsIgnoreCase(o.getStatus())
-                                || "RETURNED".equalsIgnoreCase(o.getStatus())
-                                || "REFUNDED".equalsIgnoreCase(o.getPaymentStatus()))
-                        .collect(Collectors.toList());
+                sellerOrders = allOrders.stream().filter(o -> "REFUND".equalsIgnoreCase(o.getStatus()) || "RETURNED".equalsIgnoreCase(o.getStatus()) || "REFUNDED".equalsIgnoreCase(o.getPaymentStatus())).collect(Collectors.toList());
                 break;
             case "orders":
-                sellerOrders = allOrders.stream()
-                        .filter(o -> o.getStatus() != null
-                                && !"CANCELLED".equalsIgnoreCase(o.getStatus())
-                                && !"REFUND".equalsIgnoreCase(o.getStatus())
-                                && !"RETURNED".equalsIgnoreCase(o.getStatus()))
-                        .collect(Collectors.toList());
+                sellerOrders = allOrders.stream().filter(o -> o.getStatus() != null && !"CANCELLED".equalsIgnoreCase(o.getStatus()) && !"REFUND".equalsIgnoreCase(o.getStatus()) && !"RETURNED".equalsIgnoreCase(o.getStatus())).collect(Collectors.toList());
                 break;
             default:
                 sellerOrders = allOrders;
         }
 
-        // Luôn nạp categoryList và brandList cho trang products
         if ("products".equals(action)) {
             request.setAttribute("categoryList", loadCategories());
             request.setAttribute("brandList", loadBrands());
@@ -155,24 +146,16 @@ public class SellerManageServlet extends HttpServlet {
                 if (fileName != null && fileName.contains(".")) {
                     ext = fileName.substring(fileName.lastIndexOf(".")).toLowerCase();
                 }
-                // Chỉ cho phép ảnh
-                if (!ext.matches("\\.(jpg|jpeg|png|webp|gif)")) {
-                    return null;
-                }
+                if (!ext.matches("\\.(jpg|jpeg|png|webp|gif)")) return null;
 
                 String newFileName = "manga_" + System.currentTimeMillis() + ext;
-
-                // Lưu vào thư mục Image/uploads/ trong webapp
                 String uploadDir = request.getServletContext().getRealPath("/Image/uploads/");
                 File dir = new File(uploadDir);
                 if (!dir.exists()) dir.mkdirs();
 
-                // Copy stream vào file
                 try (InputStream input = filePart.getInputStream()) {
                     Files.copy(input, Paths.get(uploadDir, newFileName), StandardCopyOption.REPLACE_EXISTING);
                 }
-
-                // Trả về đường dẫn tương đối để lưu vào DB
                 return "Image/uploads/" + newFileName;
             }
         } catch (Exception e) {
@@ -200,18 +183,42 @@ public class SellerManageServlet extends HttpServlet {
                 return;
             }
 
-            // Xử lý ảnh upload
             String uploadedImage = handleFileUpload(request);
-            if (uploadedImage != null) {
-                p.setImageUrl(uploadedImage);
-            }
+            if (uploadedImage != null) p.setImageUrl(uploadedImage);
 
+            boolean isAuction = request.getParameter("isAuction") != null;
+            p.setAuction(isAuction); // Cập nhật cờ đấu giá
             p.setSellerId(sellerId);
             p.setSellerName(seller.getUsername());
             p.setStatus("PENDING_APPROVAL");
 
             int newId = productDao.addProduct(p);
+
             if (newId > 0) {
+                // NẾU LÀ ĐẤU GIÁ -> LƯU VÀO BẢNG AUCTIONS
+                if (isAuction) {
+                    try {
+                        double startingPrice = Double.parseDouble(request.getParameter("startingPrice"));
+                        double bidStep = Double.parseDouble(request.getParameter("bidStep"));
+                        String endTimeStr = request.getParameter("endTime"); // yyyy-MM-ddTHH:mm
+
+                        java.sql.Timestamp endTime = Timestamp.valueOf(endTimeStr.replace("T", " ") + ":00");
+                        java.sql.Timestamp startTime = new Timestamp(System.currentTimeMillis());
+
+                        JDBIConnector.get().useHandle(h ->
+                                h.createUpdate("INSERT INTO auctions (product_id, seller_id, starting_price, bid_step, start_time, end_time, status) " +
+                                                "VALUES (:pid, :sid, :start, :step, :stime, :etime, 'UPCOMING')")
+                                        .bind("pid", newId).bind("sid", sellerId)
+                                        .bind("start", startingPrice).bind("step", bidStep)
+                                        .bind("stime", startTime).bind("etime", endTime)
+                                        .execute()
+                        );
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                        flash(request, "error", "Lỗi lưu thông tin đấu giá. Vui lòng thử lại.");
+                        return;
+                    }
+                }
                 flash(request, "success", "Đã đăng bán! Bài đăng đang chờ Admin kiểm duyệt.");
             } else {
                 flash(request, "error", "Không thể tạo sản phẩm. Vui lòng thử lại.");
@@ -234,9 +241,7 @@ public class SellerManageServlet extends HttpServlet {
             p.setId(id);
 
             String uploadedImage = handleFileUpload(request);
-            if (uploadedImage != null) {
-                p.setImageUrl(uploadedImage);
-            }
+            if (uploadedImage != null) p.setImageUrl(uploadedImage);
 
             boolean ok = productDao.updateProduct(p, sellerId);
             if (ok) {
@@ -306,7 +311,7 @@ public class SellerManageServlet extends HttpServlet {
         p.setPrice(price);
         p.setStockQuantity(stock);
         p.setDescription(trimToNull(req.getParameter("description")));
-        p.setImageUrl(trimToNull(req.getParameter("imageUrl"))); // URL dán tay
+        p.setImageUrl(trimToNull(req.getParameter("imageUrl")));
         p.setSeriesName(trimToNull(req.getParameter("seriesName")));
         p.setAuthor(trimToNull(req.getParameter("author")));
         p.setVolumeNumber(volume);
@@ -343,31 +348,15 @@ public class SellerManageServlet extends HttpServlet {
         return t.isEmpty() ? null : t;
     }
 
-    // =========================================================
-    // ĐÃ SỬA LỖI LẤY CATEGORY VÀ BRAND
-    // =========================================================
     private List<Category> loadCategories() {
         try {
-            return JDBIConnector.get().withHandle(h ->
-                    h.createQuery("SELECT id, name FROM categories ORDER BY id ASC")
-                            .mapToBean(Category.class).list());
-        } catch (Exception e) {
-            System.err.println("LỖI LẤY CATEGORIES: " + e.getMessage());
-            e.printStackTrace();
-            return new ArrayList<>();
-        }
+            return JDBIConnector.get().withHandle(h -> h.createQuery("SELECT id, name FROM categories ORDER BY id ASC").mapToBean(Category.class).list());
+        } catch (Exception e) { return new ArrayList<>(); }
     }
 
     private List<Category> loadBrands() {
         try {
-            // Dùng Category class cho tiện vì nó có id và name
-            return JDBIConnector.get().withHandle(h ->
-                    h.createQuery("SELECT id, name FROM brands ORDER BY id ASC")
-                            .mapToBean(Category.class).list());
-        } catch (Exception e) {
-            System.err.println("LỖI LẤY BRANDS: " + e.getMessage());
-            e.printStackTrace();
-            return new ArrayList<>();
-        }
+            return JDBIConnector.get().withHandle(h -> h.createQuery("SELECT id, name FROM brands ORDER BY id ASC").mapToBean(Category.class).list());
+        } catch (Exception e) { return new ArrayList<>(); }
     }
 }

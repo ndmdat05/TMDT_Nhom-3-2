@@ -22,7 +22,7 @@ public class Product {
     private int categories_id;
     private String categoriesName;
     private Integer brandId;
-
+    private boolean isAuction;
     public Integer getBrandId() { return brandId; }
     public void setBrandId(Integer brandId) { this.brandId = brandId; }
     public Product() {}
@@ -125,4 +125,6 @@ public class Product {
     public void setCategoriesName(String categoriesName) {
         this.categoriesName = categoriesName;
     }
+    public boolean isAuction() { return isAuction; }
+    public void setAuction(boolean isAuction) { this.isAuction = isAuction; }
 }

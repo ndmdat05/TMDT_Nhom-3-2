@@ -1,5 +1,7 @@
 package com.tmdt.controller;
-
+import com.tmdt.Dao.AuctionDao;
+import com.tmdt.Model.Auction;
+import com.tmdt.Model.Bid;
 import com.tmdt.Dao.CommentDao;
 import com.tmdt.Dao.ProductDao;
 import com.tmdt.Model.Comment;
@@ -52,6 +54,14 @@ public class ProductDetailController extends HttpServlet {
             request.setAttribute("product", product);
             request.setAttribute("relatedProducts", relatedProducts);
 
+            if (product.isAuction()) {
+                AuctionDao auctionDao = new AuctionDao();
+                Auction auction = auctionDao.getAuctionByProductId(product.getId());
+                if (auction != null) {
+                    request.setAttribute("auction", auction);
+                    request.setAttribute("bids", auctionDao.getBidsByAuctionId(auction.getId()));
+                }
+            }
             request.getRequestDispatcher("/TrangChiTiet.jsp").forward(request, response);
 
         } catch (NumberFormatException e) {
