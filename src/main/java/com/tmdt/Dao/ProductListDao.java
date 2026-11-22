@@ -33,25 +33,11 @@ public class ProductListDao extends BaseDao {
     }
 
     private StringBuilder buildFilterQuery(String publisher, String seller, String condition, String language, Integer categoryId, Double minPrice, Double maxPrice, String sort, boolean isCount) {
-        boolean isPopular = !isCount && "popular".equals(sort);
-
         StringBuilder sql;
         if (isCount) {
-            sql = new StringBuilder("SELECT COUNT(DISTINCT p.id) FROM products p "
-                    + "LEFT JOIN users u ON p.seller_id = u.id "
-                    + "LEFT JOIN brands b ON p.brand_id = b.id "
-                    + "LEFT JOIN categories c ON p.category_id = c.id "
-                    + "WHERE p.status = 'APPROVED'");
+            sql = new StringBuilder("SELECT COUNT(p.id) FROM products p LEFT JOIN users u ON p.seller_id = u.id LEFT JOIN brands b ON p.brand_id = b.id LEFT JOIN categories c ON p.category_id = c.id WHERE p.status = 'APPROVED' AND p.is_auction = 0");
         } else {
-            sql = new StringBuilder("SELECT p.*, u.full_name AS sellerName, b.name AS publisherName, c.name AS categoriesName "
-                    + "FROM products p "
-                    + "LEFT JOIN users u ON p.seller_id = u.id "
-                    + "LEFT JOIN brands b ON p.brand_id = b.id "
-                    + "LEFT JOIN categories c ON p.category_id = c.id ");
-            if (isPopular) {
-                sql.append("LEFT JOIN order_items oi ON p.id = oi.product_id ");
-            }
-            sql.append("WHERE p.status = 'APPROVED'");
+            sql = new StringBuilder("SELECT p.*, u.full_name AS sellerName, b.name AS publisherName, c.name AS categoriesName FROM products p LEFT JOIN users u ON p.seller_id = u.id LEFT JOIN brands b ON p.brand_id = b.id LEFT JOIN categories c ON p.category_id = c.id WHERE p.status = 'APPROVED' AND p.is_auction = 0");
         }
 
         if (publisher != null && !publisher.trim().isEmpty()) {
@@ -83,9 +69,6 @@ public class ProductListDao extends BaseDao {
         }
 
         if (!isCount) {
-            if (isPopular) {
-                sql.append(" GROUP BY p.id");
-            }
             if (sort != null) {
                 switch (sort) {
                     case "price_asc":
@@ -95,7 +78,7 @@ public class ProductListDao extends BaseDao {
                         sql.append(" ORDER BY p.price DESC");
                         break;
                     case "popular":
-                        sql.append(" ORDER BY COALESCE(SUM(oi.quantity), 0) DESC, p.id DESC");
+                        sql.append(" ORDER BY p.id DESC");
                         break;
                     case "newest":
                     default:

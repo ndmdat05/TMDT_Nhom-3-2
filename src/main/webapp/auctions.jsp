@@ -1,6 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<fmt:setLocale value="vi_VN"/>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -42,16 +43,16 @@
         <div class="p-4 flex-1 flex flex-col">
           <h3 class="font-bold text-gray-900 line-clamp-2 mb-2 flex-1">${item.title}</h3>
 
-          <div class="bg-orange-50 rounded-lg p-3 mt-2 border border-orange-100">
-            <p class="text-xs text-gray-500 mb-1">Giá hiện tại:</p>
-            <p class="text-lg font-black text-red-600">
-              <fmt:formatNumber value="${item.current_highest_price > 0 ? item.current_highest_price : item.starting_price}" pattern="#,##0"/> đ
-            </p>
-          </div>
+            <div class="bg-orange-50 rounded-lg p-3 mt-2 border border-orange-100">
+                <p class="text-xs text-gray-500 mb-1">Giá hiện tại:</p>
+                <p class="text-lg font-black text-red-600">
+                    <fmt:formatNumber value="${item.current_highest_price > 0 ? item.current_highest_price : item.starting_price}" type="number" maxFractionDigits="0"/> đ
+                </p>
+            </div>
 
           <div class="mt-3 flex items-center justify-between text-xs text-gray-500">
             <span><i class="fa-regular fa-clock mr-1"></i> Kết thúc:</span>
-            <span class="font-bold text-gray-700"><fmt:formatDate value="${item.end_time}" pattern="HH:mm - dd/MM"/></span>
+              <span class="font-bold text-gray-700">${item.end_time_formatted}</span>
           </div>
 
           <a href="${pageContext.request.contextPath}/product-detail?id=${item.product_id}"

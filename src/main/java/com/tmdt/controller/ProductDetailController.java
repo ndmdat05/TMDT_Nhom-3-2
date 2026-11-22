@@ -1,9 +1,9 @@
 package com.tmdt.controller;
+
 import com.tmdt.Dao.AuctionDao;
-import com.tmdt.Model.Auction;
-import com.tmdt.Model.Bid;
 import com.tmdt.Dao.CommentDao;
 import com.tmdt.Dao.ProductDao;
+import com.tmdt.Model.Auction;
 import com.tmdt.Model.Comment;
 import com.tmdt.Model.Product;
 import jakarta.servlet.ServletException;
@@ -19,6 +19,7 @@ public class ProductDetailController extends HttpServlet {
 
     private ProductDao productDao = new ProductDao();
     private CommentDao commentDao = new CommentDao();
+    private AuctionDao auctionDao = new AuctionDao();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -39,6 +40,14 @@ public class ProductDetailController extends HttpServlet {
                 response.sendRedirect(request.getContextPath() + "/home");
                 return;
             }
+
+            // CÁCH MỚI: Lấy thẳng từ bảng Auction, bất kể cờ is_auction ở Product là gì
+            Auction auction = auctionDao.getAuctionByProductId(productId);
+            if (auction != null) {
+                request.setAttribute("auction", auction);
+                request.setAttribute("bids", auctionDao.getBidsByAuctionId(auction.getId()));
+            }
+
             List<Product> relatedProducts = productDao.getTopNewProducts(4);
 
             List<Comment> comments = commentDao.getCommentsByProduct(productId);
@@ -54,14 +63,6 @@ public class ProductDetailController extends HttpServlet {
             request.setAttribute("product", product);
             request.setAttribute("relatedProducts", relatedProducts);
 
-            if (product.isAuction()) {
-                AuctionDao auctionDao = new AuctionDao();
-                Auction auction = auctionDao.getAuctionByProductId(product.getId());
-                if (auction != null) {
-                    request.setAttribute("auction", auction);
-                    request.setAttribute("bids", auctionDao.getBidsByAuctionId(auction.getId()));
-                }
-            }
             request.getRequestDispatcher("/TrangChiTiet.jsp").forward(request, response);
 
         } catch (NumberFormatException e) {
