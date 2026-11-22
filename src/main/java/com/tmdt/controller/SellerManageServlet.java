@@ -39,10 +39,8 @@ public class SellerManageServlet extends HttpServlet {
     private final ProductDao productDao = new ProductDao();
     private final OrderDao orderDao = new OrderDao();
 
-    // ================== GET ==================
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
         response.setContentType("text/html;charset=UTF-8");
 
@@ -55,7 +53,6 @@ public class SellerManageServlet extends HttpServlet {
         String action = request.getParameter("action");
         if (action == null || action.trim().isEmpty()) action = "products";
 
-        // ---- EDIT / ADD ----
         if ("edit".equals(action) || "add".equals(action)) {
             if ("edit".equals(action)) {
                 try {
@@ -77,7 +74,6 @@ public class SellerManageServlet extends HttpServlet {
             return;
         }
 
-        // ---- LIST ----
         int sellerId = acc.getId();
         List<Product> sellerProducts = productDao.getProductsBySellerId(sellerId);
         List<Order> allOrders = orderDao.getOrdersBySellerId(sellerId);
@@ -110,12 +106,9 @@ public class SellerManageServlet extends HttpServlet {
         request.getRequestDispatcher("/seller-manage.jsp").forward(request, response);
     }
 
-    // ================== POST ==================
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
-
         User acc = getLoggedInUser(request);
         if (acc == null) {
             response.sendRedirect(request.getContextPath() + "/login");
@@ -136,7 +129,6 @@ public class SellerManageServlet extends HttpServlet {
         response.sendRedirect(request.getContextPath() + "/seller-manage?action=products");
     }
 
-    // -------- UPLOAD HELPER --------
     private String handleFileUpload(HttpServletRequest request) {
         try {
             Part filePart = request.getPart("imageFile");
@@ -177,17 +169,28 @@ public class SellerManageServlet extends HttpServlet {
     // -------- ADD --------
     private void handleAdd(HttpServletRequest request, int sellerId, User seller) {
         try {
+            boolean isAuction = request.getParameter("isAuction") != null;
             Product p = parseProductFromForm(request);
+
             if (p == null) {
                 flash(request, "error", "Vui lòng kiểm tra lại: tên, giá bán phải hợp lệ.");
                 return;
             }
 
+            if (isAuction) {
+                try {
+                    double sp = Double.parseDouble(request.getParameter("startingPrice"));
+                    p.setPrice(sp);
+                } catch (Exception e) {
+                    flash(request, "error", "Giá khởi điểm không hợp lệ.");
+                    return;
+                }
+            }
+
             String uploadedImage = handleFileUpload(request);
             if (uploadedImage != null) p.setImageUrl(uploadedImage);
 
-            boolean isAuction = request.getParameter("isAuction") != null;
-            p.setAuction(isAuction); // Cập nhật cờ đấu giá
+            p.setAuction(isAuction);
             p.setSellerId(sellerId);
             p.setSellerName(seller.getUsername());
             p.setStatus("PENDING_APPROVAL");
@@ -195,12 +198,11 @@ public class SellerManageServlet extends HttpServlet {
             int newId = productDao.addProduct(p);
 
             if (newId > 0) {
-                // NẾU LÀ ĐẤU GIÁ -> LƯU VÀO BẢNG AUCTIONS
                 if (isAuction) {
                     try {
                         double startingPrice = Double.parseDouble(request.getParameter("startingPrice"));
                         double bidStep = Double.parseDouble(request.getParameter("bidStep"));
-                        String endTimeStr = request.getParameter("endTime"); // yyyy-MM-ddTHH:mm
+                        String endTimeStr = request.getParameter("endTime");
 
                         java.sql.Timestamp endTime = Timestamp.valueOf(endTimeStr.replace("T", " ") + ":00");
                         java.sql.Timestamp startTime = new Timestamp(System.currentTimeMillis());
@@ -229,7 +231,6 @@ public class SellerManageServlet extends HttpServlet {
         }
     }
 
-    // -------- UPDATE --------
     private void handleUpdate(HttpServletRequest request, int sellerId) {
         try {
             int id = Integer.parseInt(request.getParameter("id"));
@@ -255,7 +256,6 @@ public class SellerManageServlet extends HttpServlet {
         }
     }
 
-    // -------- DELETE & TOGGLE --------
     private void handleDelete(HttpServletRequest request, int sellerId) {
         try {
             int id = Integer.parseInt(request.getParameter("id"));
@@ -279,20 +279,26 @@ public class SellerManageServlet extends HttpServlet {
         }
     }
 
-    // -------- HELPERS --------
+    // SỬA LẠI HÀM NÀY: Cho phép price bị null nếu là đấu giá
     private Product parseProductFromForm(HttpServletRequest req) {
         String title = req.getParameter("title");
         if (title == null || title.trim().isEmpty()) return null;
         if (title.trim().length() > 255) return null;
 
-        double price;
+        double price = 0; // Mặc định là 0
         try {
-            price = Double.parseDouble(req.getParameter("price"));
-            if (price < 0) return null;
+            String priceStr = req.getParameter("price");
+            if (priceStr != null && !priceStr.trim().isEmpty()) {
+                price = Double.parseDouble(priceStr);
+                if (price < 0) return null;
+            }
         } catch (Exception e) { return null; }
 
         int stock = 1;
-        try { stock = Integer.parseInt(req.getParameter("stockQuantity")); } catch (Exception ignored) {}
+        try {
+            String stockStr = req.getParameter("stockQuantity");
+            if(stockStr != null && !stockStr.isEmpty()) stock = Integer.parseInt(stockStr);
+        } catch (Exception ignored) {}
         if (stock < 0) stock = 0;
 
         Integer volume = null;
