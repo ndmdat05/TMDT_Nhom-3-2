@@ -5,7 +5,7 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>Chỉnh sửa sản phẩm - MangaZ Seller</title>
+  <title>${empty product ? 'Đăng bán sản phẩm mới' : 'Chỉnh sửa sản phẩm'} - MangaZ</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -20,31 +20,28 @@
 
   <div class="bg-white rounded shadow-sm p-4">
     <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
-      <h4 class="fw-bold mb-0"><i class="fas fa-edit text-danger me-2"></i>Chỉnh sửa sản phẩm #${product.id}</h4>
-      <c:choose>
-        <c:when test="${product.status == 'APPROVED'}"><span class="badge bg-success">Đang hiển thị</span></c:when>
-        <c:when test="${product.status == 'PENDING_APPROVAL'}"><span class="badge bg-warning text-dark">Chờ duyệt</span></c:when>
-        <c:when test="${product.status == 'REJECTED'}"><span class="badge bg-danger">Bị từ chối</span></c:when>
-        <c:when test="${product.status == 'HIDDEN'}"><span class="badge bg-secondary">Đang ẩn</span></c:when>
-      </c:choose>
+      <h4 class="fw-bold mb-0">
+        <i class="fas fa-edit text-danger me-2"></i>
+        ${empty product ? 'Đăng bán sản phẩm mới' : 'Chỉnh sửa sản phẩm #'.concat(product.id)}
+      </h4>
+      <c:if test="${not empty product}">
+        <c:choose>
+          <c:when test="${product.status == 'APPROVED'}"><span class="badge bg-success">Đang hiển thị</span></c:when>
+          <c:when test="${product.status == 'PENDING_APPROVAL'}"><span class="badge bg-warning text-dark">Chờ duyệt</span></c:when>
+          <c:when test="${product.status == 'REJECTED'}"><span class="badge bg-danger">Bị từ chối</span></c:when>
+          <c:when test="${product.status == 'HIDDEN'}"><span class="badge bg-secondary">Đang ẩn</span></c:when>
+        </c:choose>
+      </c:if>
     </div>
 
-    <c:if test="${product.status == 'REJECTED' && not empty product.rejectionReason}">
-      <div class="alert alert-danger">
-        <b>Lý do bị từ chối:</b> <c:out value="${product.rejectionReason}"/>
-        <div class="small mt-1">Sửa lại và gửi duyệt lại — Admin sẽ xem xét lần hai.</div>
-      </div>
-    </c:if>
-
-    <div class="alert alert-info py-2 small">
-      <i class="fas fa-info-circle me-1"></i> Nếu sản phẩm đang <b>hiển thị</b> hoặc <b>bị từ chối</b>, sau khi lưu sẽ chuyển về <b>Chờ duyệt</b> để Admin duyệt lại.
-    </div>
-
-    <!-- QUAN TRỌNG: enctype multipart/form-data -->
     <form action="seller-manage" method="post" enctype="multipart/form-data">
-      <input type="hidden" name="action" value="update">
-      <input type="hidden" name="id" value="${product.id}">
+      <!-- Nếu là update thì truyền action=update và id, ngược lại là add -->
+      <input type="hidden" name="action" value="${empty product ? 'add' : 'update'}">
+      <c:if test="${not empty product}">
+        <input type="hidden" name="id" value="${product.id}">
+      </c:if>
 
+      <!-- THÔNG TIN CƠ BẢN -->
       <div class="mb-3">
         <label class="form-label fw-semibold">Tên truyện <span class="text-danger">*</span></label>
         <input type="text" name="title" class="form-control" required maxlength="255" value="<c:out value='${product.title}'/>">
@@ -119,9 +116,33 @@
         </div>
         <div class="col-md-6 mb-3">
           <label class="form-label fw-semibold">Tồn kho</label>
-          <input type="number" name="stockQuantity" class="form-control" min="0" value="${product.stockQuantity}">
+          <input type="number" name="stockQuantity" class="form-control" min="0" value="${empty product ? 1 : product.stockQuantity}">
         </div>
       </div>
+
+      <!-- KHỐI ĐẤU GIÁ (Chỉ hiển thị khi THÊM MỚI) -->
+      <c:if test="${empty product}">
+        <div class="mb-4 p-3 bg-orange-50 border border-orange-200 rounded">
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="isAuction" name="isAuction" value="true" onchange="toggleAuctionFields()">
+            <label class="form-check-label fw-bold text-orange-800" for="isAuction">Đăng bán dưới hình thức Đấu giá</label>
+          </div>
+          <div id="auctionFields" class="mt-3 row d-none">
+            <div class="col-md-4">
+              <label class="form-label small fw-bold">Giá khởi điểm (VNĐ)</label>
+              <input type="number" name="startingPrice" class="form-control" min="0" step="1000">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-bold">Bước giá (VNĐ)</label>
+              <input type="number" name="bidStep" class="form-control" value="10000" min="1000" step="1000">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-bold">Thời gian kết thúc</label>
+              <input type="datetime-local" name="endTime" class="form-control">
+            </div>
+          </div>
+        </div>
+      </c:if>
 
       <!-- ẢNH BÌA -->
       <div class="mb-3 p-3 bg-light rounded border">
@@ -152,7 +173,7 @@
 
       <div class="d-flex justify-content-end gap-2 border-top pt-3">
         <a href="seller-manage?action=products" class="btn btn-outline-secondary">Hủy</a>
-        <button type="submit" class="btn btn-danger"><i class="fas fa-save me-1"></i> Lưu & Gửi duyệt lại</button>
+        <button type="submit" class="btn btn-danger"><i class="fas fa-save me-1"></i> ${empty product ? 'Đăng bán' : 'Lưu & Gửi duyệt lại'}</button>
       </div>
     </form>
   </div>
@@ -172,6 +193,12 @@
       }
       reader.readAsDataURL(file);
     }
+  }
+
+  function toggleAuctionFields() {
+    var cb = document.getElementById('isAuction');
+    var f = document.getElementById('auctionFields');
+    if (cb.checked) f.classList.remove('d-none'); else f.classList.add('d-none');
   }
 </script>
 </body>
