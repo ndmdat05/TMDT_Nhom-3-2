@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 @WebServlet(name = "SellerManageServlet", urlPatterns = {"/seller-manage"})
 @MultipartConfig(
         fileSizeThreshold = 1024 * 1024 * 2,  // 2MB
-        maxFileSize = 1024 * 1024 * 10,       // 10MB
+        maxFileSize = 1024 * 1024 * 20,       // 20MB (Tăng giới hạn file)
         maxRequestSize = 1024 * 1024 * 50     // 50MB
 )
 public class SellerManageServlet extends HttpServlet {
@@ -138,7 +138,12 @@ public class SellerManageServlet extends HttpServlet {
                 if (fileName != null && fileName.contains(".")) {
                     ext = fileName.substring(fileName.lastIndexOf(".")).toLowerCase();
                 }
-                if (!ext.matches("\\.(jpg|jpeg|png|webp|gif)")) return null;
+
+                // Kiểm tra định dạng ảnh
+                if (!ext.matches("\\.(jpg|jpeg|png|webp|gif)")) {
+                    System.err.println("LỖI UP ẢNH: Định dạng file không hợp lệ - " + ext);
+                    return null;
+                }
 
                 String newFileName = "manga_" + System.currentTimeMillis() + ext;
                 String uploadDir = request.getServletContext().getRealPath("/Image/uploads/");
@@ -148,9 +153,14 @@ public class SellerManageServlet extends HttpServlet {
                 try (InputStream input = filePart.getInputStream()) {
                     Files.copy(input, Paths.get(uploadDir, newFileName), StandardCopyOption.REPLACE_EXISTING);
                 }
+
+                System.out.println("UP ẢNH THÀNH CÔNG: " + "Image/uploads/" + newFileName);
                 return "Image/uploads/" + newFileName;
+            } else {
+                System.err.println("LỖI UP ẢNH: filePart null hoặc size = 0");
             }
         } catch (Exception e) {
+            System.err.println("LỖI UP ẢNH EXCEPTION: " + e.getMessage());
             e.printStackTrace();
         }
         return null;
@@ -166,7 +176,6 @@ public class SellerManageServlet extends HttpServlet {
         return null;
     }
 
-    // -------- ADD --------
     private void handleAdd(HttpServletRequest request, int sellerId, User seller) {
         try {
             boolean isAuction = request.getParameter("isAuction") != null;
@@ -188,7 +197,9 @@ public class SellerManageServlet extends HttpServlet {
             }
 
             String uploadedImage = handleFileUpload(request);
-            if (uploadedImage != null) p.setImageUrl(uploadedImage);
+            if (uploadedImage != null) {
+                p.setImageUrl(uploadedImage);
+            }
 
             p.setAuction(isAuction);
             p.setSellerId(sellerId);
@@ -242,7 +253,9 @@ public class SellerManageServlet extends HttpServlet {
             p.setId(id);
 
             String uploadedImage = handleFileUpload(request);
-            if (uploadedImage != null) p.setImageUrl(uploadedImage);
+            if (uploadedImage != null) {
+                p.setImageUrl(uploadedImage);
+            }
 
             boolean ok = productDao.updateProduct(p, sellerId);
             if (ok) {
@@ -279,13 +292,12 @@ public class SellerManageServlet extends HttpServlet {
         }
     }
 
-    // SỬA LẠI HÀM NÀY: Cho phép price bị null nếu là đấu giá
     private Product parseProductFromForm(HttpServletRequest req) {
         String title = req.getParameter("title");
         if (title == null || title.trim().isEmpty()) return null;
         if (title.trim().length() > 255) return null;
 
-        double price = 0; // Mặc định là 0
+        double price = 0;
         try {
             String priceStr = req.getParameter("price");
             if (priceStr != null && !priceStr.trim().isEmpty()) {
@@ -317,7 +329,7 @@ public class SellerManageServlet extends HttpServlet {
         p.setPrice(price);
         p.setStockQuantity(stock);
         p.setDescription(trimToNull(req.getParameter("description")));
-        p.setImageUrl(trimToNull(req.getParameter("imageUrl")));
+        p.setImageUrl(trimToNull(req.getParameter("imageUrl"))); // URL dán tay
         p.setSeriesName(trimToNull(req.getParameter("seriesName")));
         p.setAuthor(trimToNull(req.getParameter("author")));
         p.setVolumeNumber(volume);

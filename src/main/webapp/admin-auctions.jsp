@@ -1,6 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<fmt:setLocale value="vi_VN"/>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -31,8 +32,7 @@
             <tr>
                 <th class="px-6 py-4">Sản phẩm</th>
                 <th class="px-6 py-4">Giá hiện tại</th>
-                <th class="px-6 py-4">Người dẫn đầu</th>
-                <th class="px-6 py-4">Kết thúc</th>
+                <th class="px-6 py-4">Kết thúc (Dự kiến)</th>
                 <th class="px-6 py-4 text-center">Thao tác</th>
             </tr>
             </thead>
@@ -45,24 +45,21 @@
                     <td class="px-6 py-4 text-red-600 font-bold">
                         <fmt:formatNumber value="${a.current_highest_price > 0 ? a.current_highest_price : a.starting_price}" pattern="#,##0"/> đ
                     </td>
-                    <td class="px-6 py-4 text-gray-700">
-                            ${a.winner_id != null ? 'Đã có người đặt' : 'Chưa có ai'}
-                    </td>
                     <td class="px-6 py-4 text-gray-500">
-                        <fmt:formatDate value="${a.end_time}" pattern="HH:mm - dd/MM/yyyy"/>
+                            ${a.end_time_formatted}
                     </td>
                     <td class="px-6 py-4 text-center">
-                        <form action="${pageContext.request.contextPath}/admin/auctions" method="POST" onsubmit="return confirm('Chốt phiên này và tạo đơn hàng cho người thắng?');">
+                        <form action="${pageContext.request.contextPath}/admin/auctions" method="POST" onsubmit="return confirm('Chốt phiên này ngay lập tức và tạo đơn hàng cho người thắng?');">
                             <input type="hidden" name="auctionId" value="${a.id}">
                             <button type="submit" class="px-4 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition">
-                                <i class="fas fa-check-circle mr-1"></i> Chốt phiên
+                                <i class="fas fa-check-circle mr-1"></i> Chốt phiên ngay
                             </button>
                         </form>
                     </td>
                 </tr>
             </c:forEach>
             <c:if test="${empty auctionList}">
-                <tr><td colspan="5" class="text-center py-8 text-gray-500">Không có phiên đấu giá nào đang diễn ra.</td></tr>
+                <tr><td colspan="4" class="text-center py-8 text-gray-500">Không có phiên đấu giá nào đang diễn ra.</td></tr>
             </c:if>
             </tbody>
         </table>
