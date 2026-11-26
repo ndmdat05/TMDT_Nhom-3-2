@@ -39,7 +39,6 @@
         <a href="${pageContext.request.contextPath}/product-list" class="text-gray-700 font-bold text-sm hover:text-indigo-600 flex items-center gap-1 no-underline">
             Khám phá <i class="fas fa-chevron-down text-[0.6rem] text-gray-400"></i>
         </a>
-        <!-- ĐÃ SỬA LINK ĐẤU GIÁ TẠI ĐÂY -->
         <a href="${pageContext.request.contextPath}/auctions" class="text-gray-700 font-bold text-sm hover:text-indigo-600 flex items-center gap-1 no-underline">
             <span class="w-2 h-2 rounded-full bg-indigo-600 inline-block"></span> Đấu giá
         </a>
@@ -69,7 +68,8 @@
             </c:if>
         </a>
 
-        <a href="#" class="text-gray-600 hover:text-indigo-600 relative transition-colors no-underline mr-2">
+        <!-- ĐÃ ĐỔI LINK THỦ CÔNG TỪ # SANG /notifications TẠI ĐÂY -->
+        <a href="${pageContext.request.contextPath}/notifications" class="text-gray-600 hover:text-indigo-600 relative transition-colors no-underline mr-2" title="Thông báo">
             <i class="far fa-bell text-xl"></i>
 
             <!-- Hiển thị số lượng thông báo chưa đọc -->

@@ -263,8 +263,9 @@
                 </table>
             </div>
 
-            <!-- TỔNG KẾT TIỀN & THÔNG TIN THANH TOÁN -->
+            <!-- TỔNG KẾT TIỀN & THÔNG TIN THANH TOÁN (NÚT THANH TOÁN ĐÃ ĐƯỢC CHUYỂN SANG BÊN PHẢI) -->
             <div class="border-t border-gray-100 pt-5 flex flex-wrap justify-between items-start gap-4">
+                <!-- KHỐI BÊN TRÁI: HÌNH THỨC & TRẠNG THÁI -->
                 <div class="text-xs text-gray-500 space-y-2">
                     <p>Hình thức: <span class="font-semibold text-gray-800 uppercase">${not empty order.paymentMethod ? order.paymentMethod : 'COD'}</span></p>
                     <p>Thanh toán:
@@ -272,40 +273,45 @@
                             ${order.paymentStatus eq 'PAID' ? 'Đã thanh toán' : (order.paymentStatus eq 'REFUNDED' ? 'Đã hoàn tiền' : (order.paymentStatus eq 'LOST_DEPOSIT' ? 'Mất tiền cọc' : 'Chưa thanh toán'))}
                         </span>
                     </p>
+                </div>
 
-                    <!-- NÚT THANH TOÁN NGAY CHO ĐƠN ĐẤU GIÁ NẾU CHƯA PAID -->
+                <!-- KHỐI BÊN PHẢI: CHI TIẾT TIỀN + BOX LƯU Ý + NÚT THANH TOÁN -->
+                <div class="w-full md:w-80 space-y-3 text-sm">
+                    <c:if test="${isAuc}">
+                        <div class="p-2.5 rounded-xl bg-purple-50 border border-purple-100 text-xs text-purple-700">
+                            <i class="fas fa-info-circle mr-1"></i> Số tiền bên dưới là <b>số tiền còn lại</b> cần thanh toán sau khi trừ đi 65% tiền cọc bạn đã đặt.
+                        </div>
+                    </c:if>
+
+                    <div class="space-y-2 text-gray-500">
+                        <div class="flex justify-between">
+                            <span>Tạm tính</span>
+                            <span class="font-medium text-gray-800">
+                                <fmt:formatNumber value="${order.totalAmount}" type="currency" currencySymbol="₫" maxFractionDigits="0"/>
+                            </span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Phí vận chuyển</span>
+                            <span class="font-medium text-gray-800">0₫</span>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center pt-3 border-t border-gray-100 font-bold text-gray-900">
+                        <span class="text-base">Tổng thanh toán</span>
+                        <span class="text-xl text-indigo-600 font-extrabold">
+                            <fmt:formatNumber value="${order.totalAmount}" type="currency" currencySymbol="₫" maxFractionDigits="0"/>
+                        </span>
+                    </div>
+
+                    <!-- NÚT THANH TOÁN NGAY CHO ĐƠN ĐẤU GIÁ NẾU CHƯA PAID (ĐÃ ĐƯỢC CHUYỂN XUỐNG DƯỚI TỔNG THANH TOÁN) -->
                     <c:if test="${order.paymentStatus != 'PAID' && (order.paymentMethod == 'ONLINE' || isAuc)}">
-                        <div class="pt-2">
+                        <div class="pt-1">
                             <a href="${pageContext.request.contextPath}/pay-auction?orderId=${order.id}"
-                               class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm hover:shadow transition gap-2">
+                               class="w-full flex items-center justify-center px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md hover:shadow-lg transition gap-2 no-underline">
                                 <i class="fas fa-credit-card"></i> Thanh toán ngay phần còn lại
                             </a>
                         </div>
                     </c:if>
-                </div>
-
-                <div class="w-72 space-y-2.5 text-sm">
-                    <c:if test="${isAuc}">
-                        <div class="p-2.5 rounded-xl bg-purple-50 border border-purple-100 text-xs text-purple-700 mb-2">
-                            <i class="fas fa-info-circle mr-1"></i> Số tiền bên dưới là <b>số tiền còn lại</b> cần thanh toán sau khi trừ đi 65% tiền cọc bạn đã đặt.
-                        </div>
-                    </c:if>
-                    <div class="flex justify-between text-gray-500">
-                        <span>Tạm tính</span>
-                        <span class="font-medium text-gray-800">
-                            <fmt:formatNumber value="${order.totalAmount}" type="currency" currencySymbol="₫" maxFractionDigits="0"/>
-                        </span>
-                    </div>
-                    <div class="flex justify-between text-gray-500">
-                        <span>Phí vận chuyển</span>
-                        <span class="font-medium text-gray-800">0₫</span>
-                    </div>
-                    <div class="flex justify-between items-center pt-3 border-t border-gray-100 font-bold text-gray-900">
-                        <span class="text-base">Tổng thanh toán</span>
-                        <span class="text-lg text-blue-600 font-extrabold">
-                            <fmt:formatNumber value="${order.totalAmount}" type="currency" currencySymbol="₫" maxFractionDigits="0"/>
-                        </span>
-                    </div>
                 </div>
             </div>
         </div>
