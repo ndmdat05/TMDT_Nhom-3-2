@@ -58,11 +58,21 @@ public class AuctionDao {
                     return "Giá đặt không được thấp hơn giá khởi điểm (" + String.format("%,.0f", auction.getStartingPrice()) + " VNĐ).";
                 }
 
-                // --- LOGIC ĐẶT CỌC 10% ---
+                // Đếm tổng số lượt bid của phiên này (để check xem đây có phải lượt bid ĐẦU TIÊN không)
+                Integer totalBids = handle.createQuery("SELECT COUNT(*) FROM bids WHERE auction_id = :aid")
+                        .bind("aid", auctionId).mapTo(Integer.class).one();
+
+                // NẾU LÀ LƯỢT BID ĐẦU TIÊN -> SET THỜI GIAN VỀ 10 PHÚT
+                if (totalBids == 0) {
+                    handle.createUpdate("UPDATE auctions SET end_time = DATE_ADD(NOW(), INTERVAL 10 MINUTE) WHERE id = :aid")
+                            .bind("aid", auctionId).execute();
+                }
+
+                // Kiểm tra xem user này đã từng bid chưa (để trừ cọc)
                 Integer hasBid = handle.createQuery("SELECT COUNT(*) FROM bids WHERE auction_id = :aid AND user_id = :uid")
                         .bind("aid", auctionId).bind("uid", userId).mapTo(Integer.class).one();
 
-                if (hasBid == 0) { // Chỉ trừ cọc ở lần đặt giá đầu tiên
+                if (hasBid == 0) { // Trừ cọc 65% ở lần đặt giá đầu tiên của User này
                     double depositAmount = auction.getStartingPrice() * 0.65;
 
                     Double walletBalance = handle.createQuery("SELECT COALESCE(wallet_balance, 0) FROM users WHERE id = :uid")
@@ -76,19 +86,18 @@ public class AuctionDao {
                     handle.createUpdate("UPDATE users SET wallet_balance = COALESCE(wallet_balance, 0) - :deposit WHERE id = :uid")
                             .bind("deposit", depositAmount).bind("uid", userId).execute();
 
-                    // Lưu lịch sử giao dịch ví
-                    try {
-                        handle.createUpdate("INSERT INTO wallet_transactions (user_id, amount, type, description, created_at) VALUES (:uid, :amount, 'DEPOSIT_AUCTION', :desc, NOW())")
-                                .bind("uid", userId).bind("amount", depositAmount)
-                                .bind("desc", "Đặt cọc 10% tham gia đấu giá sản phẩm #" + auction.getProductId()).execute();
-                    } catch (Exception e) {
-                        throw new RuntimeException("Lỗi lưu lịch sử giao dịch (Kiểm tra lại bảng wallet_transactions): " + e.getMessage());
-                    }
+                    // Lưu lịch sử giao dịch ví (SỬA THÀNH SỐ ÂM ĐỂ HIỆN DẤU TRỪ)
+                    handle.createUpdate("INSERT INTO wallet_transactions (user_id, amount, type, description, created_at) VALUES (:uid, :amount, 'DEPOSIT_AUCTION', :desc, NOW())")
+                            .bind("uid", userId)
+                            .bind("amount", -depositAmount) // <--- SỬA THÀNH SỐ ÂM Ở ĐÂY
+                            .bind("desc", "Đặt cọc 65% tham gia đấu giá sản phẩm #" + auction.getProductId()).execute();
                 }
 
+                // Cập nhật giá cao nhất
                 handle.createUpdate("UPDATE auctions SET current_highest_price = :bid, winner_id = :uid WHERE id = :id")
                         .bind("bid", bidAmount).bind("uid", userId).bind("id", auctionId).execute();
 
+                // Ghi lịch sử đấu giá
                 handle.createUpdate("INSERT INTO bids (auction_id, user_id, bid_amount) VALUES (:aid, :uid, :bid)")
                         .bind("aid", auctionId).bind("uid", userId).bind("bid", bidAmount).execute();
 
@@ -117,12 +126,13 @@ public class AuctionDao {
                     .bind("id", auctionId).mapToBean(Auction.class).findOne().orElse(null);
 
             if (a == null) return "Phiên đấu giá không tồn tại hoặc đã được chốt.";
-
             if (a.getWinnerId() == null || a.getCurrentHighestPrice() == 0) {
-                handle.createUpdate("UPDATE auctions SET status = 'ENDED' WHERE id = :id").bind("id", auctionId).execute();
+                handle.createUpdate("UPDATE products SET stock_quantity = 0, status = 'SOLD' WHERE id = :pid")
+                        .bind("pid", a.getProductId()).execute();
                 return "Đã đóng phiên đấu giá (Không có người tham gia).";
             }
 
+            // Lấy thông tin người thắng
             Map<String, Object> buyer = handle.createQuery("SELECT full_name, phone_number, address FROM users WHERE id = :uid")
                     .bind("uid", a.getWinnerId()).mapToMap().one();
 
@@ -130,27 +140,40 @@ public class AuctionDao {
             String receiverPhone = buyer.get("phone_number") != null ? buyer.get("phone_number").toString() : "Chờ cập nhật";
             String shippingAddress = buyer.get("address") != null ? buyer.get("address").toString() : "Chờ cập nhật";
 
+            // === TÍNH TIỀN CÒN LẠI SAU KHI TRỪ CỌC 65% ===
+            double depositAmount = a.getStartingPrice() * 0.65;
+            double remainingAmount = a.getCurrentHighestPrice() - depositAmount;
+            if (remainingAmount < 0) remainingAmount = 0; // Đề phòng giá thắng thấp hơn giá khởi điểm
+
             String orderCode = "AUC" + System.currentTimeMillis();
 
+            // Tạo đơn hàng với số tiền còn lại
             String sqlOrder = "INSERT INTO orders (order_code, buyer_id, seller_id, receiver_name, receiver_phone, shipping_address, total_amount, payment_method, payment_status, order_status) " +
                     "VALUES (:code, :bid, :sid, :rname, :rphone, :raddr, :total, 'ONLINE', 'PENDING', 'PENDING')";
 
             handle.createUpdate(sqlOrder)
                     .bind("code", orderCode).bind("bid", a.getWinnerId()).bind("sid", a.getSellerId())
                     .bind("rname", receiverName).bind("rphone", receiverPhone).bind("raddr", shippingAddress)
-                    .bind("total", a.getCurrentHighestPrice()).execute();
+                    .bind("total", remainingAmount).execute();
 
             int orderId = handle.createQuery("SELECT LAST_INSERT_ID()").mapTo(Integer.class).one();
             String title = handle.createQuery("SELECT title FROM products WHERE id = :pid").bind("pid", a.getProductId()).mapTo(String.class).one();
 
             handle.createUpdate("INSERT INTO order_items (order_id, product_id, product_title, quantity, unit_price) VALUES (:oid, :pid, :title, 1, :price)")
-                    .bind("oid", orderId).bind("pid", a.getProductId()).bind("title", title).bind("price", a.getCurrentHighestPrice()).execute();
+                    .bind("oid", orderId).bind("pid", a.getProductId()).bind("title", title).bind("price", remainingAmount).execute();
 
+            // Đóng phiên
             handle.createUpdate("UPDATE auctions SET status = 'ENDED' WHERE id = :id").bind("id", auctionId).execute();
+
+            // === TẠO THÔNG BÁO CHO NGƯỜI THẮNG ===
+            String notifContent = "Chúc mừng! Bạn đã thắng đấu giá sản phẩm '" + title + "'. Vui lòng thanh toán nốt "
+                    + String.format("%,.0f", remainingAmount) + " VNĐ (đã trừ tiền cọc).";
+            handle.createUpdate("INSERT INTO notifications (user_id, type, title, content, link, is_read, created_at) " +
+                            "VALUES (:uid, 'AUCTION_WIN', 'Thắng đấu giá', :content, '/my-orders', 0, NOW())")
+                    .bind("uid", a.getWinnerId()).bind("content", notifContent).execute();
 
             return "SUCCESS";
         });
-
     }
     // 6. Lấy toàn bộ danh sách đấu giá cho Admin
     public List<Map<String, Object>> getAllAuctionsForAdmin() {

@@ -24,6 +24,57 @@ public class OrderDao {
         return orderList;
     }
 
+    // LẤY ĐƠN HÀNG BẰNG ORDER_CODE
+    public Order getOrderByCode(String orderCode) {
+        String sql = "SELECT o.id, o.order_code, o.total_amount, o.order_status AS status, "
+                + "o.shipping_address, o.created_at, o.receiver_name, o.receiver_phone, "
+                + "o.payment_method, o.payment_status, o.cancel_reason, o.buyer_id, o.seller_id "
+                + "FROM orders o WHERE o.order_code = :orderCode";
+
+        try {
+            return get().withHandle(handle ->
+                    handle.createQuery(sql)
+                            .bind("orderCode", orderCode)
+                            .map((rs, ctx) -> {
+                                Order o = new Order();
+                                o.setId(rs.getInt("id"));
+                                o.setOrderCode(rs.getString("order_code"));
+                                o.setTotalAmount(rs.getDouble("total_amount"));
+                                o.setStatus(rs.getString("status"));
+                                o.setShippingAddress(rs.getString("shipping_address"));
+                                o.setCreatedAt(rs.getTimestamp("created_at"));
+                                o.setReceiverName(rs.getString("receiver_name"));
+                                o.setReceiverPhone(rs.getString("receiver_phone"));
+                                o.setPaymentMethod(rs.getString("payment_method"));
+                                o.setPaymentStatus(rs.getString("payment_status"));
+                                o.setCancelReason(rs.getString("cancel_reason"));
+                                return o;
+                            })
+                            .findOne().orElse(null)
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    // CẬP NHẬT TRẠNG THÁI THANH TOÁN BẰNG ORDER_CODE (CHO VNPAY RETURN)
+    public boolean updatePaymentStatusByCode(String orderCode, String paymentStatus, String orderStatus) {
+        String sql = "UPDATE orders SET payment_status = :paymentStatus, order_status = :orderStatus WHERE order_code = :orderCode";
+        try {
+            return get().withHandle(handle ->
+                    handle.createUpdate(sql)
+                            .bind("paymentStatus", paymentStatus)
+                            .bind("orderStatus", orderStatus)
+                            .bind("orderCode", orderCode)
+                            .execute() > 0
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     public List<Order> getOrdersBySellerName(String sellerName) {
         String sql = "SELECT o.id, o.order_code, "
                 + "COALESCE((SELECT oi.product_title FROM order_items oi WHERE oi.order_id = o.id LIMIT 1), 'Manga Sưu Tầm') AS productTitle, "
@@ -70,7 +121,6 @@ public class OrderDao {
         }
     }
 
-    // CẬP NHẬT TRẠNG THÁI: LƯU VÀO DATABASE MYSQL VÀ CẬP NHẬT CẢ RAM
     public boolean updateOrderStatus(int orderId, String newStatus) {
         String sql = "COMPLETED".equalsIgnoreCase(newStatus)
                 ? "UPDATE orders SET order_status = :status, payment_status = 'PAID' WHERE id = :id"
@@ -84,7 +134,6 @@ public class OrderDao {
                             .execute() > 0
             );
 
-            // Cập nhật cả list RAM (nếu là đơn mock 501, 502)
             for (Order o : orderList) {
                 if (o.getId() == orderId) {
                     o.setStatus(newStatus);
@@ -169,35 +218,16 @@ public class OrderDao {
         return updateOrderStatus(orderId, statusStr);
     }
 
-    // ==============================================================
-    // HÀM LƯU ĐƠN HÀNG VÀO DATABASE MANGAZDB
-    // ==============================================================
     public int createOrder(Integer buyerId, Integer sellerId,
                            String receiverName, String receiverPhone,
                            String address, double totalAmount, String paymentMethod,
                            String paymentStatus, String orderCode, Cart cart) {
 
-        // ============ ✅ VALIDATE BẮT BUỘC ============
-        if (buyerId == null || buyerId <= 0) {
-            System.err.println("[createOrder] FAIL: buyerId không hợp lệ = " + buyerId);
-            return 0;
-        }
-        if (sellerId == null || sellerId <= 0) {
-            System.err.println("[createOrder] FAIL: sellerId không hợp lệ = " + sellerId);
-            return 0;
-        }
-        if (orderCode == null || orderCode.trim().isEmpty()) {
-            System.err.println("[createOrder] FAIL: orderCode rỗng");
-            return 0;
-        }
-        if (cart == null || cart.getTotalQuantity() == 0) {
-            System.err.println("[createOrder] FAIL: cart rỗng");
-            return 0;
-        }
-        if (totalAmount <= 0) {
-            System.err.println("[createOrder] FAIL: totalAmount <= 0");
-            return 0;
-        }
+        if (buyerId == null || buyerId <= 0) return 0;
+        if (sellerId == null || sellerId <= 0) return 0;
+        if (orderCode == null || orderCode.trim().isEmpty()) return 0;
+        if (cart == null || cart.getTotalQuantity() == 0) return 0;
+        if (totalAmount <= 0) return 0;
 
         String sqlOrder = "INSERT INTO orders (order_code, buyer_id, seller_id, receiver_name, receiver_phone, "
                 + "shipping_address, total_amount, payment_method, payment_status, order_status, "
@@ -264,9 +294,6 @@ public class OrderDao {
                         .bind("note", note)
                         .execute();
 
-                System.out.println("[createOrder] OK: orderId=" + orderId
-                        + ", buyer=" + finalBuyerId + ", seller=" + finalSellerId);
-
                 return orderId;
             });
         } catch (Exception e) {
@@ -314,7 +341,6 @@ public class OrderDao {
         }
     }
 
-    // 1. CHI TIẾT ĐƠN CHO BUYER (ĐÃ BỔ SUNG CANCEL_REASON)
     public Order getOrderById(int orderId, int buyerId) {
         String sql = "SELECT o.id, o.order_code, "
                 + "COALESCE((SELECT oi.product_title FROM order_items oi WHERE oi.order_id = o.id LIMIT 1), 'Manga Sưu Tầm') AS productTitle, "
@@ -362,7 +388,6 @@ public class OrderDao {
         }
     }
 
-    // 2. CHI TIẾT ĐƠN CHO SELLER (ĐÃ BỔ SUNG CANCEL_REASON)
     public Order getOrderById(int orderId) {
         String sql = "SELECT o.id, o.order_code, "
                 + "COALESCE((SELECT oi.product_title FROM order_items oi WHERE oi.order_id = o.id LIMIT 1), 'Manga Sưu Tầm') AS productTitle, "
@@ -408,7 +433,6 @@ public class OrderDao {
             e.printStackTrace();
         }
 
-        // Dự phòng cho đơn mock 501, 502 trong RAM
         for (Order o : orderList) {
             if (o.getId() == orderId) {
                 return o;
@@ -417,13 +441,11 @@ public class OrderDao {
         return null;
     }
 
-    // ==============================================================
-    // HÀM HỦY ĐƠN VÀ HOÀN TIỀN VÀO VÍ MANGAVAULT (CHUẨN ACID TRANSACTION)
-    // ==============================================================
+    // HÀM HỦY ĐƠN: KIỂM TRA PHÂN BIỆT ĐƠN ĐẤU GIÁ VÀ ĐƠN THƯỜNG
+    // HÀM HỦY ĐƠN: KIỂM TRA PHÂN BIỆT ĐƠN ĐẤU GIÁ VÀ ĐƠN THƯỜNG
     public boolean cancelOrderWithWalletRefund(int orderId, int buyerId, String cancelReason) {
         try {
             return get().inTransaction(handle -> {
-                // 1. Kiểm tra đơn hàng thuộc về đúng buyer_id và đang ở trạng thái PENDING
                 var orderOpt = handle.createQuery(
                                 "SELECT id, order_code, total_amount, payment_status, payment_method, order_status " +
                                         "FROM orders WHERE id = :orderId AND buyer_id = :buyerId FOR UPDATE"
@@ -433,28 +455,64 @@ public class OrderDao {
                         .mapToMap()
                         .findOne();
 
-                if (orderOpt.isEmpty()) {
-                    return false;
-                }
+                if (orderOpt.isEmpty()) return false;
 
                 var order = orderOpt.get();
                 String currentStatus = String.valueOf(order.get("order_status"));
                 if (!"PENDING".equalsIgnoreCase(currentStatus)) {
-                    return false; // Chỉ cho phép hủy khi đang PENDING
+                    return false; // Chỉ hủy được đơn ở trạng thái PENDING
                 }
 
+                String orderCode = order.get("order_code") != null ? String.valueOf(order.get("order_code")) : "";
+                boolean isAuctionOrder = orderCode.startsWith("AUC");
+
+                // ==============================================================
+                // LUỒNG HỦY ĐƠN ĐẤU GIÁ (MẤT CỌC - KHÔNG REFUND VÍ)
+                // ==============================================================
+                if (isAuctionOrder) {
+                    // 1. Cập nhật đơn thành CANCELLED, payment_status = LOST_DEPOSIT
+                    handle.createUpdate(
+                                    "UPDATE orders SET order_status = 'CANCELLED', payment_status = 'LOST_DEPOSIT', cancel_reason = :reason WHERE id = :orderId"
+                            )
+                            .bind("reason", "[Tịch thu cọc 65%] " + cancelReason)
+                            .bind("orderId", orderId)
+                            .execute();
+
+                    // 2. Hoàn tồn kho sản phẩm để bán lại hoặc đấu giá lại
+                    handle.createUpdate(
+                                    "UPDATE products p " +
+                                            "JOIN order_items oi ON p.id = oi.product_id " +
+                                            "SET p.stock_quantity = p.stock_quantity + oi.quantity " +
+                                            "WHERE oi.order_id = :orderId"
+                            )
+                            .bind("orderId", orderId)
+                            .execute();
+
+                    // 3. Cập nhật danh sách RAM (nếu dùng)
+                    for (Order o : orderList) {
+                        if (o.getId() == orderId) {
+                            o.setStatus("CANCELLED");
+                            o.setPaymentStatus("LOST_DEPOSIT");
+                            o.setCancelReason("[Tịch thu cọc 65%] " + cancelReason);
+                            break;
+                        }
+                    }
+
+                    return true; // Kết thúc xử lý đơn Đấu giá (Không cộng tiền vào Ví)
+                }
+
+                // ==============================================================
+                // LUỒNG HỦY ĐƠN MUA THƯỜNG (CÓ REFUND VÍ NẾU ĐÃ THÁNH TOÁN ONLINE)
+                // ==============================================================
                 String paymentStatus = String.valueOf(order.get("payment_status"));
                 String paymentMethod = String.valueOf(order.get("payment_method"));
                 double totalAmount = Double.parseDouble(String.valueOf(order.get("total_amount")));
-                String orderCode = order.get("order_code") != null ? String.valueOf(order.get("order_code")) : String.valueOf(orderId);
 
                 boolean isPaid = "PAID".equalsIgnoreCase(paymentStatus)
                         || "ONLINE".equalsIgnoreCase(paymentMethod)
                         || "VNPAY".equalsIgnoreCase(paymentMethod);
 
-                // 2. Cập nhật trạng thái đơn hàng trong DB
                 if (isPaid) {
-                    // Đã thanh toán: Chuyển CANCELLED + REFUNDED + lưu lý do
                     handle.createUpdate(
                                     "UPDATE orders SET order_status = 'CANCELLED', payment_status = 'REFUNDED', cancel_reason = :reason WHERE id = :orderId"
                             )
@@ -462,7 +520,6 @@ public class OrderDao {
                             .bind("orderId", orderId)
                             .execute();
 
-                    // 3. Hoàn tiền vào ví: Cộng wallet_balance trong bảng users
                     handle.createUpdate(
                                     "UPDATE users SET wallet_balance = COALESCE(wallet_balance, 0) + :amount WHERE id = :buyerId"
                             )
@@ -470,7 +527,6 @@ public class OrderDao {
                             .bind("buyerId", buyerId)
                             .execute();
 
-                    // 4. Ghi lịch sử biến động số dư ví vào bảng wallet_transactions
                     String desc = "Hoàn tiền đơn hàng #" + orderCode + " - Lý do: " + cancelReason;
                     handle.createUpdate(
                                     "INSERT INTO wallet_transactions (user_id, order_id, amount, type, description, created_at) " +
@@ -483,7 +539,6 @@ public class OrderDao {
                             .execute();
 
                 } else {
-                    // Đơn COD chưa thanh toán: Chỉ chuyển CANCELLED và lưu lý do
                     handle.createUpdate(
                                     "UPDATE orders SET order_status = 'CANCELLED', cancel_reason = :reason WHERE id = :orderId"
                             )
@@ -492,7 +547,7 @@ public class OrderDao {
                             .execute();
                 }
 
-                // 5. CỘNG HOÀN LẠI TỒN KHO CHO SẢN PHẨM (Áp dụng cho cả đơn COD và Đơn Online)
+                // Cộng lại tồn kho
                 handle.createUpdate(
                                 "UPDATE products p " +
                                         "JOIN order_items oi ON p.id = oi.product_id " +
@@ -502,14 +557,11 @@ public class OrderDao {
                         .bind("orderId", orderId)
                         .execute();
 
-                // Cập nhật cả list RAM (nếu là đơn mock)
                 for (Order o : orderList) {
                     if (o.getId() == orderId) {
                         o.setStatus("CANCELLED");
                         o.setCancelReason(cancelReason);
-                        if (isPaid) {
-                            o.setPaymentStatus("REFUNDED");
-                        }
+                        if (isPaid) o.setPaymentStatus("REFUNDED");
                         break;
                     }
                 }
@@ -521,8 +573,11 @@ public class OrderDao {
             return false;
         }
     }
+    public boolean confirmPackAuctionOrder(int orderId) {
+        String sql = "UPDATE orders SET order_status = 'SHIPPING', payment_status = IF(payment_method='ONLINE','PAID',payment_status) WHERE id = :id";
+        return get().withHandle(h -> h.createUpdate(sql).bind("id", orderId).execute() > 0);
+    }
 
-    // 3. DANH SÁCH MÓN HÀNG TRONG ĐƠN (ORDER_ITEMS)
     public List<OrderItem> getOrderItemsByOrderId(int orderId) {
         String sql = "SELECT oi.id, oi.order_id, oi.product_id, oi.product_title, oi.quantity, oi.unit_price, "
                 + "COALESCE(p.image_url, 'Image/manga_01.jpg') AS image_url "
@@ -555,23 +610,14 @@ public class OrderDao {
         String sql = "SELECT id, order_code, shipping_address, total_amount, payment_method, payment_status, "
                 + "order_status AS status, tracking_number, estimated_delivery, created_at, receiver_name, receiver_phone "
                 + "FROM orders ORDER BY created_at DESC";
-        return get().withHandle(handle ->
-                handle.createQuery(sql)
-                        .mapToBean(Order.class)
-                        .list()
-        );
+        return get().withHandle(handle -> handle.createQuery(sql).mapToBean(Order.class).list());
     }
 
     public List<Order> getOrdersByStatus(String status) {
         String sql = "SELECT id, order_code, shipping_address, total_amount, payment_method, payment_status, "
                 + "order_status AS status, tracking_number, estimated_delivery, created_at, receiver_name, receiver_phone "
                 + "FROM orders WHERE order_status = :status ORDER BY created_at DESC";
-        return get().withHandle(handle ->
-                handle.createQuery(sql)
-                        .bind("status", status)
-                        .mapToBean(Order.class)
-                        .list()
-        );
+        return get().withHandle(handle -> handle.createQuery(sql).bind("status", status).mapToBean(Order.class).list());
     }
 
     public List<Order> getRefundOrders() {
@@ -579,11 +625,7 @@ public class OrderDao {
                 + "order_status AS status, tracking_number, estimated_delivery, created_at, receiver_name, receiver_phone "
                 + "FROM orders WHERE payment_status = 'REFUNDED' OR order_status = 'RETURNED' "
                 + "ORDER BY created_at DESC";
-        return get().withHandle(handle ->
-                handle.createQuery(sql)
-                        .mapToBean(Order.class)
-                        .list()
-        );
+        return get().withHandle(handle -> handle.createQuery(sql).mapToBean(Order.class).list());
     }
 
     public int countAllOrders() {
@@ -593,9 +635,7 @@ public class OrderDao {
 
     public int countOrdersByStatus(String status) {
         String sql = "SELECT COUNT(*) FROM orders WHERE order_status = :status";
-        return get().withHandle(handle ->
-                handle.createQuery(sql).bind("status", status).mapTo(Integer.class).one()
-        );
+        return get().withHandle(handle -> handle.createQuery(sql).bind("status", status).mapTo(Integer.class).one());
     }
 
     public int countRefundOrders() {
