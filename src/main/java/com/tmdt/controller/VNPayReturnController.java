@@ -2,6 +2,7 @@ package com.tmdt.controller;
 
 import com.tmdt.Dao.OrderDao;
 import com.tmdt.Model.Cart;
+import com.tmdt.Model.Order;
 import com.tmdt.Model.User;
 import com.tmdt.untils.VnpayConfig;
 import jakarta.servlet.ServletException;
@@ -59,7 +60,25 @@ public class VNPayReturnController extends HttpServlet {
             return;
         }
 
-        // ============ 2. LẤY ID TỪ SESSION ============
+        OrderDao orderDao = new OrderDao();
+
+        // ============ 2. KIỂM TRA ĐƠN ĐÃ TỒN TẠI TRONG DB CHƯA (VÍ DỤ: ĐƠN ĐẤU GIÁ AUC...) ============
+        Order existingOrder = orderDao.getOrderByCode(orderCode);
+        if (existingOrder != null) {
+            // Cập nhật trạng thái thanh toán thành PAID cho đơn hàng đã tồn tại
+            boolean updated = orderDao.updatePaymentStatusByCode(orderCode, "PAID", "CONFIRMED");
+            if (updated) {
+                // Dọn dẹp session nếu có
+                session.removeAttribute("order_code");
+                request.getRequestDispatcher("/order-success.jsp").forward(request, response);
+                return;
+            } else {
+                request.getRequestDispatcher("/order-failed.jsp").forward(request, response);
+                return;
+            }
+        }
+
+        // ============ 3. LẤY ID TỪ SESSION (ĐỐI VỚI ĐƠN MUA THƯỜNG TẠO MỚI) ============
         Cart cart = (Cart) session.getAttribute("cart");
         String receiverName = (String) session.getAttribute("order_name");
         String receiverPhone = (String) session.getAttribute("order_phone");
@@ -68,7 +87,6 @@ public class VNPayReturnController extends HttpServlet {
         Integer buyerId  = (Integer) session.getAttribute("checkout_buyer_id");
         Integer sellerId = (Integer) session.getAttribute("checkout_seller_id");
 
-        // Fallback: nếu vì lý do gì đó session mất, đọc user từ session (không fallback về 1/2)
         if (buyerId == null || buyerId <= 0) {
             User user = getLoggedInUser(session);
             if (user != null) buyerId = user.getId();
@@ -78,7 +96,6 @@ public class VNPayReturnController extends HttpServlet {
                 || sellerId == null || sellerId <= 0
                 || cart == null || cart.getTotalQuantity() == 0
                 || receiverName == null || receiverPhone == null || address == null) {
-            // Không thể xác định buyer/seller/đơn -> báo thất bại, KHÔNG tạo đơn rác
             System.err.println("[VNPayReturn] Missing data: buyerId=" + buyerId
                     + ", sellerId=" + sellerId
                     + ", cartEmpty=" + (cart == null || cart.getTotalQuantity() == 0));
@@ -86,8 +103,7 @@ public class VNPayReturnController extends HttpServlet {
             return;
         }
 
-        // ============ 3. TẠO ĐƠN ============
-        OrderDao orderDao = new OrderDao();
+        // ============ 4. TẠO ĐƠN THƯỜNG MỚI ============
         int newId = orderDao.createOrder(
                 buyerId,
                 sellerId,
@@ -106,7 +122,7 @@ public class VNPayReturnController extends HttpServlet {
             return;
         }
 
-        // ============ 4. CLEANUP ============
+        // ============ 5. CLEANUP ============
         session.removeAttribute("cart");
         session.removeAttribute("order_name");
         session.removeAttribute("order_phone");

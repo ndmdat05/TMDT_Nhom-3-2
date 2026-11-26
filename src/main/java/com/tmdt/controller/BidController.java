@@ -33,7 +33,7 @@ public class BidController extends HttpServlet {
             if ("SUCCESS".equals(result)) {
                 session.setAttribute("message", "Đặt giá thành công! Bạn đang là người dẫn đầu.");
             } else {
-                session.setAttribute("errorMessage", result);
+                session.setAttribute("errorMessage", result); // Gửi lỗi sang JSP
             }
             response.sendRedirect(request.getContextPath() + "/product-detail?id=" + productId);
         } catch (Exception e) {

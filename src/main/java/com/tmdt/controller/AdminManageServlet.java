@@ -270,44 +270,74 @@ public class AdminManageServlet extends HttpServlet {
         }
     }
 
-    private void handleContentReviewPost(HttpServletRequest request, HttpSession session, String action) {
+    private void handleContentReviewPost(
+            HttpServletRequest request,
+            HttpSession session,
+            String action
+    ) {
         String idParam = request.getParameter("productId");
+
         if (action == null || idParam == null || idParam.isBlank()) {
             session.setAttribute("adminError", "Thiếu thông tin thao tác kiểm duyệt.");
             return;
         }
+
         int productId = Integer.parseInt(idParam.trim());
         String reason = request.getParameter("reason");
 
         switch (action) {
             case "approve": {
                 boolean updated = productModerationDao.approveProduct(productId);
+
                 if (updated) {
-                    session.setAttribute("adminSuccess", "Đã duyệt bài đăng #MV-" + productId + ". Bài đăng đã được phép hiển thị.");
+                    // PHẦN 2: KÍCH HOẠT PHIÊN ĐẤU GIÁ NẾU LÀ SẢN PHẨM ĐẤU GIÁ
+                    try {
+                        com.tmdt.db.JDBIConnector.get().useHandle(h ->
+                                h.createUpdate("UPDATE auctions SET status = 'ONGOING' WHERE product_id = :pid AND status = 'UPCOMING'")
+                                        .bind("pid", productId).execute()
+                        );
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+
+                    session.setAttribute(
+                            "adminSuccess",
+                            "Đã duyệt bài đăng #MV-" + productId + ". Bài đăng đã được phép hiển thị."
+                    );
                 } else {
-                    session.setAttribute("adminError", "Bài đăng không còn ở trạng thái chờ duyệt hoặc không tồn tại.");
+                    session.setAttribute(
+                            "adminError",
+                            "Bài đăng không còn ở trạng thái chờ duyệt hoặc không tồn tại."
+                    );
                 }
                 break;
             }
+
             case "reject": {
                 if (reason == null || reason.trim().length() < 5) {
                     session.setAttribute("adminError", "Vui lòng nhập lý do từ chối ít nhất 5 ký tự.");
                     return;
                 }
                 boolean updated = productModerationDao.rejectProduct(productId, reason.trim());
-                session.setAttribute(updated ? "adminSuccess" : "adminError", updated ? "Đã từ chối bài đăng #MV-" + productId + "." : "Không thể từ chối bài đăng này. Hãy tải lại danh sách.");
+                session.setAttribute(updated ? "adminSuccess" : "adminError",
+                        updated ? "Đã từ chối bài đăng #MV-" + productId + "." : "Không thể từ chối bài đăng này.");
                 break;
             }
+
             case "requestEdit": {
                 if (reason == null || reason.trim().length() < 5) {
                     session.setAttribute("adminError", "Vui lòng nêu rõ nội dung cần chỉnh sửa.");
                     return;
                 }
                 boolean updated = productModerationDao.requestEdit(productId, reason.trim());
-                session.setAttribute(updated ? "adminSuccess" : "adminError", updated ? "Đã gửi yêu cầu chỉnh sửa bài đăng #MV-" + productId + "." : "Không thể gửi yêu cầu chỉnh sửa.");
+                session.setAttribute(updated ? "adminSuccess" : "adminError",
+                        updated ? "Đã gửi yêu cầu chỉnh sửa bài đăng #MV-" + productId + "." : "Không thể gửi yêu cầu chỉnh sửa.");
                 break;
             }
-            default: session.setAttribute("adminError", "Hành động kiểm duyệt không hợp lệ."); break;
+
+            default:
+                session.setAttribute("adminError", "Hành động kiểm duyệt không hợp lệ.");
+                break;
         }
     }
 

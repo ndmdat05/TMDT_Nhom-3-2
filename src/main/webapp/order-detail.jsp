@@ -56,20 +56,23 @@
                     <div class="flex flex-wrap items-center gap-2 text-xs text-rose-500 mt-1.5 pt-1.5 border-t border-rose-100">
                         <span>Hình thức: <b class="uppercase text-gray-700">${not empty order.paymentMethod ? order.paymentMethod : 'COD'}</b></span>
                         <span>•</span>
-                        <span>Hoàn tiền:
-                    <c:choose>
-                        <c:when test="${order.paymentStatus eq 'REFUNDED'}">
-                            <span class="font-bold text-emerald-600">Đã hoàn vào Ví MangaVault</span>
-                            <a href="${pageContext.request.contextPath}/wallet" class="ml-1 text-indigo-600 hover:underline font-semibold">[Kiểm tra số dư]</a>
-                        </c:when>
-                        <c:when test="${order.paymentMethod eq 'ONLINE'}">
-                            <span class="font-semibold text-amber-600">Đang hoàn tiền</span>
-                        </c:when>
-                        <c:otherwise>
-                            <span class="text-gray-500">Không phát sinh</span>
-                        </c:otherwise>
-                    </c:choose>
-                </span>
+                        <span>Trạng thái cọc / hoàn tiền:
+                            <c:choose>
+                                <c:when test="${order.paymentStatus eq 'LOST_DEPOSIT' || (not empty order.orderCode && fn:startsWith(order.orderCode, 'AUC'))}">
+                                    <span class="font-bold text-rose-600">Đã tịch thu cọc 65% theo quy định đấu giá</span>
+                                </c:when>
+                                <c:when test="${order.paymentStatus eq 'REFUNDED'}">
+                                    <span class="font-bold text-emerald-600">Đã hoàn tiền vào Ví MangaVault</span>
+                                    <a href="${pageContext.request.contextPath}/wallet" class="ml-1 text-indigo-600 hover:underline font-semibold">[Kiểm tra số dư]</a>
+                                </c:when>
+                                <c:when test="${order.paymentMethod eq 'ONLINE'}">
+                                    <span class="font-semibold text-amber-600">Đang hoàn tiền</span>
+                                </c:when>
+                                <c:otherwise>
+                                    <span class="text-gray-500">Không phát sinh hoàn tiền</span>
+                                </c:otherwise>
+                            </c:choose>
+                        </span>
                     </div>
                 </div>
             </div>
@@ -77,17 +80,25 @@
 
         <div class="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-gray-100">
             <div>
-                <div class="flex items-center gap-3 mb-1.5">
+                <div class="flex items-center gap-3 mb-1.5 flex-wrap">
                     <h1 class="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">
                         Đơn hàng #${not empty order.orderCode ? order.orderCode : order.id}
                     </h1>
+
+                    <!-- DẤU ĐẮC BIỆT NẾU LÀ ĐƠN ĐẤU GIÁ (AUC) -->
+                    <c:if test="${not empty order.orderCode && fn:startsWith(order.orderCode, 'AUC')}">
+                        <span class="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700 border border-purple-200 inline-flex items-center gap-1">
+                            <i class="fas fa-gavel"></i> Đơn Đấu Giá
+                        </span>
+                    </c:if>
+
                     <!-- Badge trạng thái -->
                     <c:choose>
                         <c:when test="${order.status eq 'PENDING'}">
                             <span class="px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-600 border border-amber-200">Chờ xác nhận</span>
                         </c:when>
                         <c:when test="${order.status eq 'CONFIRMED'}">
-                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-600 border border-blue-200">Đang xử lý</span>
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-600 border border-blue-200">Đang xử lý / Đóng gói</span>
                         </c:when>
                         <c:when test="${order.status eq 'SHIPPING'}">
                             <span class="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-600 border border-indigo-200">Đã giao vận</span>
@@ -108,7 +119,7 @@
                 </p>
             </div>
 
-            <!-- CỤM NÚT ACTION CHO BUYER: NÚT HỦY LUÔN HIỆN KHI ĐƠN PENDING -->
+            <!-- CỤM NÚT ACTION CHO BUYER -->
             <div class="flex items-center gap-3">
                 <c:if test="${order.status == 'PENDING'}">
                     <button type="button" onclick="openCancelModal()"
@@ -126,8 +137,9 @@
             </div>
         </div>
 
-        <!-- STEPPER TIẾN TRÌNH -->
+        <!-- STEPPER TIẾN TRÌNH (ĐỒNG BỘ CHO CẢ ĐƠN ĐẤU GIÁ VÀ ĐƠN THƯỜNG) -->
         <c:set var="st" value="${order.status}" />
+        <c:set var="isAuc" value="${not empty order.orderCode && fn:startsWith(order.orderCode, 'AUC')}" />
         <c:set var="stepNum" value="${st eq 'PENDING' ? 1 : (st eq 'CONFIRMED' ? 2 : (st eq 'SHIPPING' ? 3 : (st eq 'COMPLETED' ? 4 : 0)))}" />
 
         <div class="py-8 px-4">
@@ -137,22 +149,35 @@
                      style="width: ${stepNum eq 1 ? '10%' : (stepNum eq 2 ? '38%' : (stepNum eq 3 ? '72%' : (stepNum eq 4 ? '100%' : '0%')))}">
                 </div>
 
+                <!-- BƯỚC 1 -->
                 <div class="relative z-10 flex flex-col items-center">
                     <div class="w-8 h-8 rounded-full flex items-center justify-center border-4 bg-white ${stepNum >= 1 ? 'border-blue-600' : 'border-gray-300'}">
                         <span class="w-3 h-3 rounded-full ${stepNum >= 1 ? 'bg-blue-600' : 'bg-transparent'}"></span>
                     </div>
-                    <span class="text-sm font-bold mt-2 text-gray-800">Đã đặt hàng</span>
+                    <span class="text-sm font-bold mt-2 text-gray-800">
+                        <c:choose>
+                            <c:when test="${isAuc}">Thắng đấu giá (Cọc 65%)</c:when>
+                            <c:otherwise>Đã đặt hàng</c:otherwise>
+                        </c:choose>
+                    </span>
                     <span class="text-xs text-gray-400 mt-0.5">${not empty order.createdAt ? order.createdAt : ''}</span>
                 </div>
 
+                <!-- BƯỚC 2 -->
                 <div class="relative z-10 flex flex-col items-center">
                     <div class="w-8 h-8 rounded-full flex items-center justify-center border-4 bg-white ${stepNum >= 2 ? 'border-blue-600' : 'border-gray-300'}">
                         <span class="w-3 h-3 rounded-full ${stepNum >= 2 ? 'bg-blue-600' : 'bg-transparent'}"></span>
                     </div>
-                    <span class="text-sm font-bold mt-2 ${stepNum >= 2 ? 'text-gray-800' : 'text-gray-400'}">Đang xử lý</span>
-                    <span class="text-xs text-gray-400 mt-0.5">${stepNum >= 2 ? 'Đã duyệt kho' : 'Chờ shop'}</span>
+                    <span class="text-sm font-bold mt-2 ${stepNum >= 2 ? 'text-gray-800' : 'text-gray-400'}">
+                        <c:choose>
+                            <c:when test="${isAuc}">Người bán đóng gói</c:when>
+                            <c:otherwise>Đang xử lý</c:otherwise>
+                        </c:choose>
+                    </span>
+                    <span class="text-xs text-gray-400 mt-0.5">${stepNum >= 2 ? 'Đã chuẩn bị' : (isAuc ? 'Chờ thanh toán nốt / Chuẩn bị' : 'Chờ shop')}</span>
                 </div>
 
+                <!-- BƯỚC 3 -->
                 <div class="relative z-10 flex flex-col items-center">
                     <div class="w-8 h-8 rounded-full flex items-center justify-center border-4 bg-white ${stepNum >= 3 ? 'border-blue-600 bg-blue-600' : 'border-gray-300'}">
                         <span class="w-3 h-3 rounded-full ${stepNum >= 3 ? 'bg-white' : 'bg-transparent'}"></span>
@@ -161,6 +186,7 @@
                     <span class="text-xs text-gray-400 mt-0.5">${not empty order.trackingNumber and order.trackingNumber ne 'Đang cập nhật' ? order.trackingNumber : 'Đang chuyển'}</span>
                 </div>
 
+                <!-- BƯỚC 4 -->
                 <div class="relative z-10 flex flex-col items-center">
                     <div class="w-8 h-8 rounded-full flex items-center justify-center border-4 bg-white ${stepNum eq 4 ? 'border-blue-600 bg-blue-600' : 'border-gray-300'}">
                         <span class="w-3 h-3 rounded-full ${stepNum eq 4 ? 'bg-white' : 'bg-transparent'}"></span>
@@ -227,9 +253,6 @@
                                         </div>
                                     </div>
                                 </td>
-                                <td class="py-4 text-right text-gray-600 font-medium text-sm md:text-base">
-                                    <fmt:formatNumber value="${order.totalAmount}" type="currency" currencySymbol="₫" maxFractionDigits="0"/>
-                                </td>
                                 <td class="py-4 text-right font-bold text-gray-900 text-sm md:text-base">
                                     <fmt:formatNumber value="${order.totalAmount}" type="currency" currencySymbol="₫" maxFractionDigits="0"/>
                                 </td>
@@ -242,16 +265,31 @@
 
             <!-- TỔNG KẾT TIỀN & THÔNG TIN THANH TOÁN -->
             <div class="border-t border-gray-100 pt-5 flex flex-wrap justify-between items-start gap-4">
-                <div class="text-xs text-gray-500 space-y-1">
+                <div class="text-xs text-gray-500 space-y-2">
                     <p>Hình thức: <span class="font-semibold text-gray-800 uppercase">${not empty order.paymentMethod ? order.paymentMethod : 'COD'}</span></p>
                     <p>Thanh toán:
                         <span class="font-semibold ${order.paymentStatus eq 'PAID' ? 'text-emerald-600' : (order.paymentStatus eq 'REFUNDED' ? 'text-rose-600' : 'text-amber-600')}">
-                            ${order.paymentStatus eq 'PAID' ? 'Đã thanh toán' : (order.paymentStatus eq 'REFUNDED' ? 'Đã hoàn tiền' : 'Chưa thanh toán')}
+                            ${order.paymentStatus eq 'PAID' ? 'Đã thanh toán' : (order.paymentStatus eq 'REFUNDED' ? 'Đã hoàn tiền' : (order.paymentStatus eq 'LOST_DEPOSIT' ? 'Mất tiền cọc' : 'Chưa thanh toán'))}
                         </span>
                     </p>
+
+                    <!-- NÚT THANH TOÁN NGAY CHO ĐƠN ĐẤU GIÁ NẾU CHƯA PAID -->
+                    <c:if test="${order.paymentStatus != 'PAID' && (order.paymentMethod == 'ONLINE' || isAuc)}">
+                        <div class="pt-2">
+                            <a href="${pageContext.request.contextPath}/pay-auction?orderId=${order.id}"
+                               class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm hover:shadow transition gap-2">
+                                <i class="fas fa-credit-card"></i> Thanh toán ngay phần còn lại
+                            </a>
+                        </div>
+                    </c:if>
                 </div>
 
                 <div class="w-72 space-y-2.5 text-sm">
+                    <c:if test="${isAuc}">
+                        <div class="p-2.5 rounded-xl bg-purple-50 border border-purple-100 text-xs text-purple-700 mb-2">
+                            <i class="fas fa-info-circle mr-1"></i> Số tiền bên dưới là <b>số tiền còn lại</b> cần thanh toán sau khi trừ đi 65% tiền cọc bạn đã đặt.
+                        </div>
+                    </c:if>
                     <div class="flex justify-between text-gray-500">
                         <span>Tạm tính</span>
                         <span class="font-medium text-gray-800">
@@ -382,21 +420,36 @@
         </div>
 
     </div>
-    <!-- MODAL CHỌN LÝ DO HỦY ĐƠN (PHONG CÁCH SHOPEE) -->
+
+    <!-- MODAL CHỌN LÝ DO HỦY ĐƠN (CÓ CẢNH BÁO TỊCH THU CỌC ĐẤU GIÁ) -->
     <div id="cancelOrderModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm hidden transition-opacity">
         <div class="bg-white rounded-2xl w-full max-w-lg p-6 shadow-2xl border border-gray-100 mx-4 transform transition-all">
             <div class="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
                 <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
-                  Lý do hủy đơn hàng
+                    Lý do hủy đơn hàng
                 </h3>
                 <button type="button" onclick="closeCancelModal()" class="text-gray-400 hover:text-gray-600 p-1">
                     <i class="fas fa-times text-lg"></i>
                 </button>
             </div>
 
-            <form method="post" action="${pageContext.request.contextPath}/order-detail" id="cancelOrderForm">
+            <!-- BANNER CẢNH BÁO DÀNH RIÊNG CHO ĐƠN ĐẤU GIÁ -->
+            <c:if test="${isAuc}">
+                <div class="mb-4 p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-3">
+                    <i class="fas fa-triangle-exclamation text-amber-600 text-xl mt-0.5"></i>
+                    <div class="text-xs text-amber-800">
+                        <h5 class="font-bold text-rose-600 text-sm mb-0.5">⚠️ CẢNH BÁO MẤT TIỀN CỌC 65%!</h5>
+                        <p class="leading-relaxed">
+                            Đây là <b>Đơn hàng Đấu Giá</b>. Theo chính sách sàn MangaVault, nếu bạn tiến hành hủy đơn hàng này, toàn bộ <b>tiền cọc 65% đã đặt sẽ KHÔNG ĐƯỢC HOÀN TRẢ</b> và KHÔNG ĐƯỢC HOÀN TRẢ VÀO VÍ.
+                        </p>
+                    </div>
+                </div>
+            </c:if>
+
+            <form method="post" action="${pageContext.request.contextPath}/order-detail" id="cancelOrderForm" onsubmit="return handleCancelOrderSubmit(event)">
                 <input type="hidden" name="action" value="cancel">
                 <input type="hidden" name="orderId" value="${order.id}">
+                <input type="hidden" id="jsOrderCode" value="${order.orderCode}">
 
                 <p class="text-xs text-gray-500 mb-3">Vui lòng chọn lý do chính xác để MangaVault hỗ trợ bạn tốt hơn:</p>
 
@@ -438,13 +491,29 @@
         </div>
     </div>
 
-    <!-- SCRIPT ĐÓNG / MỞ MODAL -->
+    <!-- SCRIPT ĐÓNG / MỞ MODAL & BẮT EVENT XÁC NHẬN MẤT CỌC -->
     <script>
         function openCancelModal() {
             document.getElementById('cancelOrderModal').classList.remove('hidden');
         }
         function closeCancelModal() {
             document.getElementById('cancelOrderModal').classList.add('hidden');
+        }
+
+        function handleCancelOrderSubmit(event) {
+            var orderCode = document.getElementById("jsOrderCode").value;
+            if (orderCode && orderCode.startsWith("AUC")) {
+                var confirmMsg = "⚠️ XÁC NHẬN KHÔNG HOÀN TRẢ TIỀN CỌC!\n\n" +
+                    "Đây là ĐƠN HÀNG ĐẤU GIÁ.\n" +
+                    "Nếu bạn chọn hủy đơn hàng này, toàn bộ TIỀN CỌC 65% đã đặt sẽ BỊ MẤT 65% tiền cọc theo quy định của sàn.\n\n" +
+                    "Bạn có chắc chắn muốn tiếp tục HỦY ĐƠN?";
+                var userConfirmed = confirm(confirmMsg);
+                if (!userConfirmed) {
+                    event.preventDefault();
+                    return false;
+                }
+            }
+            return true;
         }
     </script>
 </main>

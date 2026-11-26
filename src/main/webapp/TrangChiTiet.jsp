@@ -2,6 +2,7 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
+<fmt:setLocale value="vi_VN"/>
 
 <!DOCTYPE html>
 <html lang="vi">
@@ -89,98 +90,105 @@
 
             <!-- KHỐI GIÁ & FORM MUA HÀNG / ĐẤU GIÁ -->
             <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col gap-4">
+
+                <!-- BẮT ĐẦU: KHỐI HIỂN THỊ THÔNG BÁO LỖI/THÀNH CÔNG -->
+                <c:if test="${not empty sessionScope.errorMessage}">
+                    <div class="bg-red-50 text-red-700 p-3 rounded-lg border border-red-200 text-sm font-semibold">
+                        <i class="fa-solid fa-circle-exclamation mr-1"></i> ${sessionScope.errorMessage}
+                    </div>
+                    <c:remove var="errorMessage" scope="session"/>
+                </c:if>
+                <c:if test="${not empty sessionScope.message}">
+                    <div class="bg-emerald-50 text-emerald-700 p-3 rounded-lg border border-emerald-200 text-sm font-semibold">
+                        <i class="fa-solid fa-circle-check mr-1"></i> ${sessionScope.message}
+                    </div>
+                    <c:remove var="message" scope="session"/>
+                </c:if>
+                <!-- KẾT THÚC: KHỐI HIỂN THỊ THÔNG BÁO -->
+
                 <c:choose>
-                    <%-- 1. NẾU LÀ SẢN PHẨM ĐẤU GIÁ --%>
-                    <c:when test="${product.auction}">
-                        <c:choose>
-                            <c:when test="${empty auction}">
-                                <div class="p-4 bg-yellow-50 text-yellow-800 border border-yellow-200 rounded-lg">
-                                    <i class="fas fa-clock mr-2"></i> Sản phẩm đang chuẩn bị mở phiên đấu giá.
+                    <%-- 1. NẾU LÀ SẢN PHẨM ĐẤU GIÁ (Check biến auction) --%>
+                    <c:when test="${not empty auction}">
+                        <div class="bg-orange-50 border border-orange-200 rounded-xl p-4">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="text-base font-bold text-orange-800"><i class="fa-solid fa-gavel"></i> Phiên Đấu Giá</h3>
+                                <span class="px-2 py-1 rounded text-xs font-bold ${auction.status == 'ONGOING' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-700'}">${auction.status}</span>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2 mb-3 text-sm">
+                                <div>
+                                    <p class="text-gray-500 text-xs">Giá khởi điểm (Cọc 65%):</p>
+                                    <p class="font-bold"><fmt:formatNumber value="${auction.startingPrice}" pattern="#,##0"/> đ</p>
                                 </div>
-                            </c:when>
-                            <c:otherwise>
-                                <div class="bg-orange-50 border border-orange-200 rounded-xl p-4">
-                                    <div class="flex justify-between items-center mb-3">
-                                        <h3 class="text-base font-bold text-orange-800"><i class="fa-solid fa-gavel"></i> Phiên Đấu Giá</h3>
-                                        <span class="px-2 py-1 rounded text-xs font-bold ${auction.status == 'ONGOING' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-700'}">${auction.status}</span>
-                                    </div>
-
-                                    <div class="grid grid-cols-2 gap-2 mb-3 text-sm">
-                                        <div>
-                                            <p class="text-gray-500 text-xs">Giá khởi điểm (Cọc 10%):</p>
-                                            <p class="font-bold"><fmt:formatNumber value="${auction.startingPrice}" pattern="#,##0"/> đ</p>
-                                        </div>
-                                        <div>
-                                            <p class="text-gray-500 text-xs">Bước giá:</p>
-                                            <p class="font-bold"><fmt:formatNumber value="${auction.bidStep}" pattern="#,##0"/> đ</p>
-                                        </div>
-                                    </div>
-
-                                    <div class="bg-white p-3 rounded-lg border border-orange-100 text-center mb-3">
-                                        <p class="text-gray-500 text-xs">Giá cao nhất hiện tại:</p>
-                                        <p class="text-2xl font-black text-red-600">
-                                            <fmt:formatNumber value="${auction.currentHighestPrice > 0 ? auction.currentHighestPrice : auction.startingPrice}" pattern="#,##0"/> đ
-                                        </p>
-                                        <p class="text-xs font-semibold text-orange-600 mt-1">
-                                            Kết thúc sau: <span id="auction-timer" data-end="${auction.endTime}">Đang tính...</span>
-                                        </p>
-                                    </div>
-
-                                    <c:if test="${auction.status == 'ONGOING'}">
-                                        <form action="${pageContext.request.contextPath}/place-bid" method="POST" class="flex flex-col gap-2">
-                                            <input type="hidden" name="productId" value="${product.id}">
-                                            <input type="hidden" name="auctionId" value="${auction.id}">
-                                            <input type="number" name="bidAmount" required
-                                                   min="${auction.currentHighestPrice > 0 ? auction.currentHighestPrice + auction.bidStep : auction.startingPrice}"
-                                                   step="${auction.bidStep}"
-                                                   placeholder="Nhập giá bạn muốn đặt (VNĐ)..."
-                                                   class="border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-500">
-                                            <button type="submit" class="bg-orange-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-orange-700 transition w-full text-sm">
-                                                Đặt giá ngay
-                                            </button>
-                                        </form>
-                                    </c:if>
+                                <div>
+                                    <p class="text-gray-500 text-xs">Bước giá:</p>
+                                    <p class="font-bold"><fmt:formatNumber value="${auction.bidStep}" pattern="#,##0"/> đ</p>
                                 </div>
+                            </div>
 
-                                <c:if test="${not empty bids}">
-                                    <div class="mt-2 border-t pt-3">
-                                        <h4 class="font-bold text-gray-800 text-sm mb-2">Lịch sử đặt giá (${fn:length(bids)})</h4>
-                                        <ul class="space-y-2 max-h-32 overflow-y-auto pr-1">
-                                            <c:forEach var="b" items="${bids}">
-                                                <li class="flex justify-between items-center bg-gray-50 p-2 rounded text-xs border border-gray-100">
-                                                    <span class="font-semibold text-gray-700">${b.userName}</span>
-                                                    <span class="text-green-600 font-bold"><fmt:formatNumber value="${b.bidAmount}" pattern="#,##0"/> đ</span>
-                                                </li>
-                                            </c:forEach>
-                                        </ul>
-                                    </div>
-                                </c:if>
+                            <div class="bg-white p-3 rounded-lg border border-orange-100 text-center mb-3">
+                                <p class="text-gray-500 text-xs">Giá cao nhất hiện tại:</p>
+                                <p class="text-2xl font-black text-red-600">
+                                    <fmt:formatNumber value="${auction.currentHighestPrice > 0 ? auction.currentHighestPrice : auction.startingPrice}" pattern="#,##0"/> đ
+                                </p>
+                                <p class="text-xs font-semibold text-orange-600 mt-1">
+                                    Kết thúc sau: <span id="auction-timer" data-end="${auction.endTime}">Đang tính...</span>
+                                </p>
+                            </div>
 
-                                <script>
-                                    document.addEventListener("DOMContentLoaded", function() {
-                                        var timerEl = document.getElementById("auction-timer");
-                                        if(!timerEl) return;
-                                        var endStr = timerEl.getAttribute("data-end");
-                                        if(!endStr) return;
-                                        var endTime = new Date(endStr.replace(" ", "T")).getTime();
-                                        var x = setInterval(function() {
-                                            var distance = endTime - new Date().getTime();
-                                            if (distance < 0) {
-                                                clearInterval(x);
-                                                timerEl.innerHTML = "ĐÃ KẾT THÚC";
-                                                timerEl.classList.add("text-red-600");
-                                                return;
-                                            }
-                                            var d = Math.floor(distance / (1000 * 60 * 60 * 24));
-                                            var h = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                                            var m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                                            var s = Math.floor((distance % (1000 * 60)) / 1000);
-                                            timerEl.innerHTML = (d > 0 ? d + " ngày " : "") + h + "h " + m + "m " + s + "s";
-                                        }, 1000);
-                                    });
-                                </script>
-                            </c:otherwise>
-                        </c:choose>
+                            <c:if test="${auction.status == 'ONGOING'}">
+                                <form action="${pageContext.request.contextPath}/place-bid" method="POST" class="flex flex-col gap-2">
+                                    <input type="hidden" name="productId" value="${product.id}">
+                                    <input type="hidden" name="auctionId" value="${auction.id}">
+                                    <input type="number" name="bidAmount" required
+                                           min="${auction.currentHighestPrice > 0 ? auction.currentHighestPrice + auction.bidStep : auction.startingPrice}"
+                                           step="${auction.bidStep}"
+                                           placeholder="Nhập giá bạn muốn đặt (VNĐ)..."
+                                           class="border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-500">
+                                    <button type="submit" class="bg-orange-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-orange-700 transition w-full text-sm">
+                                        Đặt giá ngay
+                                    </button>
+                                </form>
+                            </c:if>
+                        </div>
+
+                        <c:if test="${not empty bids}">
+                            <div class="mt-2 border-t pt-3">
+                                <h4 class="font-bold text-gray-800 text-sm mb-2">Lịch sử đặt giá (${fn:length(bids)})</h4>
+                                <ul class="space-y-2 max-h-32 overflow-y-auto pr-1">
+                                    <c:forEach var="b" items="${bids}">
+                                        <li class="flex justify-between items-center bg-gray-50 p-2 rounded text-xs border border-gray-100">
+                                            <span class="font-semibold text-gray-700">${b.userName}</span>
+                                            <span class="text-green-600 font-bold"><fmt:formatNumber value="${b.bidAmount}" pattern="#,##0"/> đ</span>
+                                        </li>
+                                    </c:forEach>
+                                </ul>
+                            </div>
+                        </c:if>
+
+                        <script>
+                            document.addEventListener("DOMContentLoaded", function() {
+                                var timerEl = document.getElementById("auction-timer");
+                                if(!timerEl) return;
+                                var endStr = timerEl.getAttribute("data-end");
+                                if(!endStr) return;
+                                var endTime = new Date(endStr.replace(" ", "T")).getTime();
+                                var x = setInterval(function() {
+                                    var distance = endTime - new Date().getTime();
+                                    if (distance < 0) {
+                                        clearInterval(x);
+                                        timerEl.innerHTML = "ĐÃ KẾT THÚC";
+                                        timerEl.classList.add("text-red-600");
+                                        return;
+                                    }
+                                    var d = Math.floor(distance / (1000 * 60 * 60 * 24));
+                                    var h = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                                    var m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                                    var s = Math.floor((distance % (1000 * 60)) / 1000);
+                                    timerEl.innerHTML = (d > 0 ? d + " ngày " : "") + h + "h " + m + "m " + s + "s";
+                                }, 1000);
+                            });
+                        </script>
                     </c:when>
 
                     <%-- 2. NẾU LÀ SẢN PHẨM MUA BÌNH THƯỜNG (CODE CŨ CỦA BẠN) --%>
@@ -240,7 +248,7 @@
         </section>
     </div>
 
-    <!-- HỆ THỐNG TAB NỘI DUNG (GIỮ NGUYÊN CODE CỦA BẠN) -->
+    <!-- HỆ THỐNG TAB NỘI DUNG -->
     <div class="mt-10">
         <div class="flex items-center gap-2 overflow-x-auto pb-1">
             <button id="btn-tab-specs" type="button" onclick="switchTab('tab-specs')" class="tab-btn px-6 py-3 rounded-lg font-bold text-sm flex items-center gap-2 bg-[#4a4bf1] text-white shadow-sm transition"><i class="fa-solid fa-table-list"></i> Bảng Thông Số & Tình Trạng</button>
