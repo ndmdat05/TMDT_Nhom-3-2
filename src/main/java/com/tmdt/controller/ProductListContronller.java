@@ -17,19 +17,17 @@ public class ProductListContronller extends HttpServlet {
     private final ProductListService productService = new ProductListService();
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        String publisher = request.getParameter("publisher");
-        String seller = request.getParameter("seller");
-        String condition = request.getParameter("condition");
-        String language = request.getParameter("language");
-        String categoryId = request.getParameter("categoryId");
-        String minPriceStr = request.getParameter("minPrice");
-        String maxPriceStr = request.getParameter("maxPrice");
+    protected void doGet(
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) throws ServletException, IOException {
+        String keyword = request.getParameter("q");
         String sort = request.getParameter("sort");
         String pageStr = request.getParameter("page");
 
         int page = 1;
         int limit = 9;
+
         if (pageStr != null && !pageStr.trim().isEmpty()) {
             try {
                 page = Integer.parseInt(pageStr);
@@ -41,22 +39,14 @@ public class ProductListContronller extends HttpServlet {
             }
         }
 
-        Double minPrice = null;
-        if (minPriceStr != null && !minPriceStr.trim().isEmpty()) {
-            minPrice = Double.parseDouble(minPriceStr);
-        }
+        List<Product> productList = productService.searchProducts(
+                keyword,
+                sort,
+                page,
+                limit
+        );
 
-        Double maxPrice = null;
-        if (maxPriceStr != null && !maxPriceStr.trim().isEmpty()) {
-            maxPrice = Double.parseDouble(maxPriceStr);
-        }
-        Integer categoryIdn = null;
-        if (categoryId != null && !categoryId.trim().isEmpty()) {
-            categoryIdn = Integer.parseInt(categoryId);
-        }
-
-        List<Product> productList = productService.filterProducts(publisher, seller, condition, language, categoryIdn, minPrice, maxPrice, sort, page, limit);
-        int totalProducts = productService.countFilterProducts(publisher, seller, condition, language, categoryIdn, minPrice, maxPrice);
+        int totalProducts = productService.countSearchProducts(keyword);
         int totalPages = (int) Math.ceil((double) totalProducts / limit);
 
         List<String> languageList = productService.getAllLanguages();

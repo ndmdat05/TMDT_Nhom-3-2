@@ -1,7 +1,8 @@
 package com.tmdt.Dao;
 
-import com.tmdt.Model.Product;
 import com.tmdt.Model.Category;
+import com.tmdt.Model.Product;
+
 import java.util.List;
 
 public class ProductListDao extends BaseDao {
@@ -32,112 +33,100 @@ public class ProductListDao extends BaseDao {
         );
     }
 
-    private StringBuilder buildFilterQuery(String publisher, String seller, String condition, String language, Integer categoryId, Double minPrice, Double maxPrice, String sort, boolean isCount) {
+    private StringBuilder buildFilterQuery(
+            String keyword,
+            String sort,
+            boolean isCount
+    ) {
+        boolean isPopular = !isCount && "popular".equals(sort);
+
         StringBuilder sql;
         if (isCount) {
-            sql = new StringBuilder("SELECT COUNT(p.id) FROM products p LEFT JOIN users u ON p.seller_id = u.id LEFT JOIN brands b ON p.brand_id = b.id LEFT JOIN categories c ON p.category_id = c.id WHERE p.status = 'APPROVED' AND p.is_auction = 0");
+            sql = new StringBuilder(
+                    "SELECT COUNT(DISTINCT p.id) FROM products p "
+                            + "LEFT JOIN brands b ON p.brand_id = b.id "
+                            + "WHERE p.status = 'APPROVED'"
+            );
         } else {
-            sql = new StringBuilder("SELECT p.*, u.full_name AS sellerName, b.name AS publisherName, c.name AS categoriesName FROM products p LEFT JOIN users u ON p.seller_id = u.id LEFT JOIN brands b ON p.brand_id = b.id LEFT JOIN categories c ON p.category_id = c.id WHERE p.status = 'APPROVED' AND p.is_auction = 0");
+            sql = new StringBuilder(
+                    "SELECT p.*, u.full_name AS sellerName, "
+                            + "b.name AS publisherName, "
+                            + "c.name AS categoriesName "
+                            + "FROM products p "
+                            + "LEFT JOIN users u ON p.seller_id = u.id "
+                            + "LEFT JOIN brands b ON p.brand_id = b.id "
+                            + "LEFT JOIN categories c ON p.category_id = c.id "
+            );
+
+            if (isPopular) {
+                sql.append("LEFT JOIN order_items oi ON p.id = oi.product_id ");
+            }
+
+            sql.append("WHERE p.status = 'APPROVED'");
         }
 
-        if (publisher != null && !publisher.trim().isEmpty()) {
-            sql.append(" AND b.name LIKE :publisher");
-        }
-
-        if (seller != null && !seller.trim().isEmpty()) {
-            sql.append(" AND u.full_name LIKE :seller");
-        }
-
-        if (condition != null && !condition.trim().isEmpty()) {
-            sql.append(" AND p.item_condition = :condition");
-        }
-
-        if (language != null && !language.trim().isEmpty()) {
-            sql.append(" AND p.language = :language");
-        }
-
-        if (categoryId != null) {
-            sql.append(" AND p.category_id = :categoryId");
-        }
-
-        if (minPrice != null) {
-            sql.append(" AND p.price >= :minPrice");
-        }
-
-        if (maxPrice != null) {
-            sql.append(" AND p.price <= :maxPrice");
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            sql.append(
+                    " AND (p.title LIKE :keyword "
+                            + "OR b.name LIKE :keyword)"
+            );
         }
 
         if (!isCount) {
-            if (sort != null) {
-                switch (sort) {
-                    case "price_asc":
-                        sql.append(" ORDER BY p.price ASC");
-                        break;
-                    case "price_desc":
-                        sql.append(" ORDER BY p.price DESC");
-                        break;
-                    case "popular":
-                        sql.append(" ORDER BY p.id DESC");
-                        break;
-                    case "newest":
-                    default:
-                        sql.append(" ORDER BY p.created_at DESC");
-                        break;
-                }
-            } else {
-                sql.append(" ORDER BY p.id DESC");
+            if (isPopular) {
+                sql.append(" GROUP BY p.id");
             }
+
+            if ("price_asc".equals(sort)) {
+                sql.append(" ORDER BY p.price ASC");
+            } else if ("price_desc".equals(sort)) {
+                sql.append(" ORDER BY p.price DESC");
+            } else if ("popular".equals(sort)) {
+                sql.append(" ORDER BY COALESCE(SUM(oi.quantity), 0) DESC, p.id DESC");
+            } else {
+                sql.append(" ORDER BY p.created_at DESC");
+            }
+
             sql.append(" LIMIT :offset, :limit");
         }
 
         return sql;
     }
 
-    public int countFilterProducts(String publisher, String seller, String condition, String language, Integer categoryId, Double minPrice, Double maxPrice) {
-        StringBuilder sql = buildFilterQuery(publisher, seller, condition, language, categoryId, minPrice, maxPrice, null, true);
+    public int countSearchProducts(String keyword) {
+        StringBuilder sql = buildFilterQuery(keyword, null, true);
 
         return get().withHandle(h -> {
             var query = h.createQuery(sql.toString());
-            bindParameters(query, publisher, seller, condition, language, categoryId, minPrice, maxPrice);
+            bindKeyword(query, keyword);
             return query.mapTo(Integer.class).one();
         });
     }
 
-    public List<Product> filterProducts(String publisher, String seller, String condition, String language, Integer categoryId, Double minPrice, Double maxPrice, String sort, int page, int limit) {
-        StringBuilder sql = buildFilterQuery(publisher, seller, condition, language, categoryId, minPrice, maxPrice, sort, false);
+    public List<Product> searchProducts(
+            String keyword,
+            String sort,
+            int page,
+            int limit
+    ) {
+        StringBuilder sql = buildFilterQuery(keyword, sort, false);
         int offset = (page - 1) * limit;
 
         return get().withHandle(h -> {
             var query = h.createQuery(sql.toString());
-            bindParameters(query, publisher, seller, condition, language, categoryId, minPrice, maxPrice);
+            bindKeyword(query, keyword);
             query.bind("offset", offset);
             query.bind("limit", limit);
             return query.mapToBean(Product.class).list();
         });
     }
 
-    private void bindParameters(org.jdbi.v3.core.statement.Query query, String publisher, String seller, String condition, String language, Integer categoryId, Double minPrice, Double maxPrice) {
-        if (publisher != null && !publisher.trim().isEmpty()) {
-            query.bind("publisher", "%" + publisher.trim() + "%");
-        }
-        if (seller != null && !seller.trim().isEmpty()) {
-            query.bind("seller", "%" + seller.trim() + "%");
-        }
-        if (condition != null && !condition.trim().isEmpty()) {
-            query.bind("condition", condition);
-        }
-        if (language != null && !language.trim().isEmpty()) {
-            query.bind("language", language);
-        }
-        if (categoryId != null) {
-            query.bind("categoryId", categoryId);
-        }
-        if (minPrice != null) {
-            query.bind("minPrice", minPrice);
-        }
-        if (maxPrice != null) {
-            query.bind("maxPrice", maxPrice);
+    private void bindKeyword(
+            org.jdbi.v3.core.statement.Query query,
+            String keyword
+    ) {
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            query.bind("keyword", "%" + keyword.trim() + "%");
         }
     }
 }
