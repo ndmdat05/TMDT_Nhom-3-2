@@ -16,20 +16,18 @@ public class AdminAuctionController extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         List<Map<String, Object>> auctionList = auctionDao.getAllAuctionsForAdmin();
 
-        // Tính toán KPI cho các thẻ thống kê
         long totalAuctions = auctionList.size();
         long ongoingCount = auctionList.stream().filter(a -> "ONGOING".equals(a.get("status"))).count();
         long endedCount = auctionList.stream().filter(a -> "ENDED".equals(a.get("status"))).count();
 
-        // Gửi dữ liệu sang JSP
         request.setAttribute("auctionList", auctionList);
         request.setAttribute("totalAuctions", totalAuctions);
         request.setAttribute("ongoingCount", ongoingCount);
         request.setAttribute("endedCount", endedCount);
-
-        // QUAN TRỌNG: Đánh dấu tab đang chọn và forward về layout chính
         request.setAttribute("activeTab", "auctions");
-        request.getRequestDispatcher("/admin-manage.jsp").forward(request, response);
+
+        // SỬA DÒNG NÀY: Trỏ đúng vào file layout Admin của bạn
+        request.getRequestDispatcher("/admin-tabs/_manage.jsp").forward(request, response);
     }
 
     @Override
@@ -42,7 +40,6 @@ public class AdminAuctionController extends HttpServlet {
         } else {
             request.getSession().setAttribute("adminError", result);
         }
-        // Sau khi xử lý xong, quay lại chính trang này
         response.sendRedirect(request.getContextPath() + "/admin/auctions");
     }
 }

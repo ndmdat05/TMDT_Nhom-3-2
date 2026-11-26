@@ -2,6 +2,7 @@ package com.tmdt.controller;
 
 import com.tmdt.Model.User;
 import com.tmdt.service.UserService;
+import com.tmdt.db.JDBIConnector; // Thêm import này
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -38,6 +39,7 @@ public class LoginController extends HttpServlet {
         if (user != null) {
             HttpSession session = request.getSession();
             session.setAttribute("user", user);
+
             WishlistDao wishlistDao = new WishlistDao();
             List<Product> wishList = wishlistDao.getWishlistByUserId(user.getId());
             Map<Integer, Product> wishlistMap = new LinkedHashMap<>();
@@ -45,6 +47,24 @@ public class LoginController extends HttpServlet {
                 wishlistMap.put(p.getId(), p);
             }
             session.setAttribute("wishlist", wishlistMap);
+
+            // =========================================================
+            // THÊM ĐOẠN NÀY: ĐẾM SỐ THÔNG BÁO CHƯA ĐỌC KHI ĐĂNG NHẬP
+            // =========================================================
+            try {
+                int unreadCount = JDBIConnector.get().withHandle(h ->
+                        h.createQuery("SELECT COUNT(*) FROM notifications WHERE user_id = :uid AND is_read = 0")
+                                .bind("uid", user.getId())
+                                .mapTo(Integer.class)
+                                .one()
+                );
+                session.setAttribute("unreadNotifCount", unreadCount);
+            } catch (Exception e) {
+                System.out.println("Lỗi khi đếm thông báo: " + e.getMessage());
+                session.setAttribute("unreadNotifCount", 0);
+            }
+            // =========================================================
+
             // PHÂN QUYỀN CHUYỂN HƯỚNG MỤC TIÊU:
             if ("ADMIN".equalsIgnoreCase(user.getRole())) {
                 response.sendRedirect(request.getContextPath() + "/dashboard");

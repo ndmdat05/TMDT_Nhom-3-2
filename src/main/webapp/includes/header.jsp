@@ -58,9 +58,21 @@
         </span>
             </c:if>
         </a>
-        <a href="#" class="text-gray-600 hover:text-indigo-600 relative transition-colors no-underline mr-2">
+        <!-- Chuông thông báo -->
+        <a href="${pageContext.request.contextPath}/notifications" class="text-gray-600 hover:text-indigo-600 relative transition-colors no-underline mr-2" title="Thông báo">
             <i class="far fa-bell text-xl"></i>
-            <span class="absolute top-0 right-0 w-2.5 h-2.5 bg-indigo-600 border-2 border-white rounded-full"></span>
+
+            <!-- Hiển thị số lượng thông báo chưa đọc -->
+            <c:if test="${not empty sessionScope.unreadNotifCount && sessionScope.unreadNotifCount > 0}">
+                <span class="absolute -top-1.5 -right-2 bg-red-500 text-white text-[0.65rem] font-bold px-1.5 py-0.5 rounded-full border-2 border-white shadow-sm">
+                        ${sessionScope.unreadNotifCount}
+                </span>
+            </c:if>
+
+            <!-- Chấm đỏ mặc định nếu chưa có biến đếm -->
+            <c:if test="${empty sessionScope.unreadNotifCount}">
+                <span class="absolute top-0 right-0 w-2.5 h-2.5 bg-indigo-600 border-2 border-white rounded-full"></span>
+            </c:if>
         </a>
 
         <div class="border-l pl-4 border-gray-200 relative group">

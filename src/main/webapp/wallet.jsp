@@ -121,9 +121,15 @@
                                             [Xem đơn #${tx.orderId}]
                                         </a>
                                     </c:if>
-                                </td>
-                                <td class="py-4 text-right font-bold text-base ${tx.type eq 'PAYMENT' ? 'text-rose-600' : 'text-emerald-600'}">
-                                        ${tx.type eq 'PAYMENT' ? '-' : '+'}<fmt:formatNumber value="${tx.amount}" type="currency" currencySymbol="₫" maxFractionDigits="0"/>
+                                <td class="py-4 text-right font-bold text-base ${tx.amount < 0 ? 'text-rose-600' : 'text-emerald-600'}">
+                                    <c:choose>
+                                        <c:when test="${tx.amount < 0}">
+                                            <fmt:formatNumber value="${tx.amount}" type="currency" currencySymbol="₫" maxFractionDigits="0"/>
+                                        </c:when>
+                                        <c:otherwise>
+                                            +<fmt:formatNumber value="${tx.amount}" type="currency" currencySymbol="₫" maxFractionDigits="0"/>
+                                        </c:otherwise>
+                                    </c:choose>
                                 </td>
                             </tr>
                         </c:forEach>

@@ -17,6 +17,7 @@ import java.util.List;
 @WebServlet(name = "OrderDetailController", urlPatterns = {"/order-detail"})
 public class OrderDetailController extends HttpServlet {
     private final OrderDao orderDao = new OrderDao();
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -54,6 +55,7 @@ public class OrderDetailController extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/my-orders");
         }
     }
+
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -77,16 +79,14 @@ public class OrderDetailController extends HttpServlet {
             try {
                 int orderId = Integer.parseInt(orderIdRaw.trim());
 
-                // Lấy lý do hủy do người mua chọn từ modal
                 String cancelReason = request.getParameter("cancelReason");
                 if (cancelReason == null || cancelReason.trim().isEmpty()) {
                     cancelReason = "Đổi ý không muốn mua nữa";
                 }
 
-                // Gọi hàm hoàn tiền ví và cập nhật trạng thái CANCELLED
+                // Gọi hàm xử lý hủy (Tự động nhận diện Đơn đấu giá để tịch thu cọc)
                 orderDao.cancelOrderWithWalletRefund(orderId, user.getId(), cancelReason);
 
-                // Tải lại trang chi tiết để hiển thị banner đã hủy và trạng thái ví
                 response.sendRedirect(request.getContextPath() + "/order-detail?id=" + orderId);
                 return;
 
