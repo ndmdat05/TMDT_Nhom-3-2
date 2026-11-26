@@ -58,7 +58,23 @@ public class OrderDao {
         }
     }
 
-    // CẬP NHẬT TRẠNG THÁI THANH TOÁN BẰNG ORDER_CODE (CHO VNPAY RETURN)
+    // ✅ THÊM HÀM MỚI: CHỈ CẬP NHẬT TRẠNG THÁI THANH TOÁN (GIỮ NGUYÊN ORDER_STATUS BẰNG PENDING)
+    public boolean updatePaymentStatusByCode(String orderCode, String paymentStatus) {
+        String sql = "UPDATE orders SET payment_status = :paymentStatus WHERE order_code = :orderCode";
+        try {
+            return get().withHandle(handle ->
+                    handle.createUpdate(sql)
+                            .bind("paymentStatus", paymentStatus)
+                            .bind("orderCode", orderCode)
+                            .execute() > 0
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // CẬP NHẬT CẢ TRẠNG THÁI THANH TOÁN VÀ TRẠNG THÁI ĐƠN HÀNG BẰNG ORDER_CODE
     public boolean updatePaymentStatusByCode(String orderCode, String paymentStatus, String orderStatus) {
         String sql = "UPDATE orders SET payment_status = :paymentStatus, order_status = :orderStatus WHERE order_code = :orderCode";
         try {
@@ -441,7 +457,6 @@ public class OrderDao {
         return null;
     }
 
-    // HÀM HỦY ĐƠN: KIỂM TRA PHÂN BIỆT ĐƠN ĐẤU GIÁ VÀ ĐƠN THƯỜNG
     // HÀM HỦY ĐƠN: KIỂM TRA PHÂN BIỆT ĐƠN ĐẤU GIÁ VÀ ĐƠN THƯỜNG
     public boolean cancelOrderWithWalletRefund(int orderId, int buyerId, String cancelReason) {
         try {

@@ -65,8 +65,8 @@ public class VNPayReturnController extends HttpServlet {
         // ============ 2. KIỂM TRA ĐƠN ĐÃ TỒN TẠI TRONG DB CHƯA (VÍ DỤ: ĐƠN ĐẤU GIÁ AUC...) ============
         Order existingOrder = orderDao.getOrderByCode(orderCode);
         if (existingOrder != null) {
-            // Cập nhật trạng thái thanh toán thành PAID cho đơn hàng đã tồn tại
-            boolean updated = orderDao.updatePaymentStatusByCode(orderCode, "PAID", "CONFIRMED");
+            // ✅ ĐÃ SỬA: Chỉ cập nhật payment_status thành PAID, KHÔNG đổi order_status (Giữ nguyên PENDING để người bán bấm Xác nhận đóng gói)
+            boolean updated = orderDao.updatePaymentStatusByCode(orderCode, "PAID");
             if (updated) {
                 // Dọn dẹp session nếu có
                 session.removeAttribute("order_code");
@@ -103,7 +103,7 @@ public class VNPayReturnController extends HttpServlet {
             return;
         }
 
-        // ============ 4. TẠO ĐƠN THƯỜNG MỚI ============
+        // ============ 4. TẠO ĐƠN THƯỜNG MỚI (Tự tạo với order_status là PENDING và payment_status là PAID) ============
         int newId = orderDao.createOrder(
                 buyerId,
                 sellerId,
